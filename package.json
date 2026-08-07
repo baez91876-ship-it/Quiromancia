@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "mongoose": "^9.9.1"
   },
@@ -7,10 +8,11 @@
   "version": "1.0.0",
   "description": "",
   "main": "app.js",
-  "devDependencies": {},
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node app.js",
+    "dev": "nodemon app.js"
   },
+  "type": "module",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/baez91876-ship-it/Quiromancia.git"
@@ -18,7 +20,6 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
   "bugs": {
     "url": "https://github.com/baez91876-ship-it/Quiromancia/issues"
   },
