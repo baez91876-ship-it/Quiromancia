@@ -8,10 +8,10 @@ import bitacoraTransaccionesRoutes from "./bitacoraTransacciones.routes.js";
 const app = express();
 
 app.use(express.json());
-app.use("/api/v1/usuarios", usuariosRoutes);
-app.use("/api/v1/matricesNumerologicas", matricesNumerologicasRoutes);
-app.use("/api/v1/promptsConfig", promptsConfigRoutes);
-app.use("/api/v1/lecturasIA", lecturasIARoutes);
-app.use("/api/v1/bitacoraTransacciones", bitacoraTransaccionesRoutes);
+app.use("/usuarios", usuariosRoutes);
+app.use("/matricesNumerologicas", matricesNumerologicasRoutes);
+app.use("/promptsConfig", promptsConfigRoutes);
+app.use("/lecturasIA", lecturasIARoutes);
+app.use("/bitacoraTransacciones", bitacoraTransaccionesRoutes);
 
 export default app;
