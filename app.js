@@ -3,15 +3,13 @@ import express from 'express'
 import { cnxmongo } from './database/cnxmongo.js'
 
 const app = express()
+const PORT = process.env.PORT || 3000
+const HOST = process.env.HOST || '0.0.0.0'
 
 app.get('/', (req, res) => res.send('Bienvenidos a la Quiromancia!'))
 
-const PORT = process.env.PORT || 3000
-
-await cnxmongo()
-
-app.listen(PORT, () => {
-    console.log(`Servidor iniciado en http://localhost:${PORT}`)
+app.listen(PORT, HOST, () => {
+    console.log(`Servidor iniciado en http://${HOST}:${PORT}`)
 })
 
 const usuarios = [
