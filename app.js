@@ -1,10 +1,14 @@
 import express from 'express'
 import 'dotenv/config'
 import { cnxmongo } from './database/cnxmongo.js'
+import apiRouter from './routes/index.js'
 
 const app = express()
 const PORT = process.env.PORT || 3000
 const HOST = process.env.HOST || '0.0.0.0'
+
+app.use(express.json())
+app.use('/api/v1', apiRouter)
 app.get('/', (req, res) => res.send('Bienvenidos a la Quiromancia!'))
 
 const start = async () => {
