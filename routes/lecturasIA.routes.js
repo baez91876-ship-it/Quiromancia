@@ -7,14 +7,18 @@ import {
     deleteLecturaIA,
     getLecturaCompleta,
 } from "../controllers/lecturasIA.controller.js";
+import { lecturaCreateValidator, lecturaUpdateValidator } from "../src/validators/lectura.validator.js";
+import { idValidator } from "../src/validators/id.validator.js";
+import { validarCampos } from "../src/middlewares/validarCampos.js";
+import { validarApiKey } from "../src/middlewares/validarApiKey.js";
 
 const router = Router();
 
-router.post("/", createLecturaIA);
+router.post("/", validarApiKey, lecturaCreateValidator, validarCampos, createLecturaIA);
 router.get("/", getLecturasIA);
-router.get("/detallada/:id", getLecturaCompleta);
-router.get("/:id", getLecturaIAById);
-router.put("/:id", updateLecturaIA);
-router.delete("/:id", deleteLecturaIA);
+router.get("/detallada/:id", idValidator, validarCampos, getLecturaCompleta);
+router.get("/:id", idValidator, validarCampos, getLecturaIAById);
+router.put("/:id", idValidator, lecturaUpdateValidator, validarCampos, updateLecturaIA);
+router.delete("/:id", idValidator, validarCampos, deleteLecturaIA);
 
 export default router;

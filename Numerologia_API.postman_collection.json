@@ -1,0 +1,743 @@
+{
+  "info": {
+    "name": "Numerologia API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Colección para probar Numerologia API con los casos requeridos del enunciado."
+  },
+  "item": [
+    {
+      "name": "Usuarios",
+      "item": [
+        {
+          "name": "Crear usuario",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "if (!pm.environment.get('user_email')) {",
+                  "    pm.environment.set('user_email', `test.${Math.random().toString(36).substring(2,10)}@example.com`);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () { pm.response.to.have.status(201); });",
+                  "const data = pm.response.json();",
+                  "pm.environment.set('usuario_id', data._id);",
+                  "pm.test('Email created matches environment email', function () { pm.expect(data.email).to.eql(pm.environment.get('user_email')); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Test Usuario\",\n  \"email\": \"{{user_email}}\",\n  \"fechaNacimiento\": \"1990-01-01\",\n  \"genero\": \"M\",\n  \"telefono\": \"5551234567\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/usuarios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "usuarios"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Crear usuario duplicado (validación unicidad)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400', function () { pm.response.to.have.status(400); });",
+                  "pm.test('Error contains email', function () { pm.expect(pm.response.json().error.toLowerCase()).to.include('email'); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Test Usuario Duplicado\",\n  \"email\": \"{{user_email}}\",\n  \"fechaNacimiento\": \"1990-01-01\",\n  \"genero\": \"M\",\n  \"telefono\": \"5551234567\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/usuarios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "usuarios"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Crear usuario sin matriz",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () { pm.response.to.have.status(201); });",
+                  "const data = pm.response.json();",
+                  "pm.environment.set('usuario_id_no_matriz', data._id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Usuario Sin Matriz\",\n  \"email\": \"test.nomatriz.{{guid}}@example.com\",\n  \"fechaNacimiento\": \"1990-01-01\",\n  \"genero\": \"F\",\n  \"telefono\": \"5550000000\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/usuarios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "usuarios"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Obtener usuario por ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "const data = pm.response.json();",
+                  "pm.test('Usuario returned matches env id', function () { pm.expect(data._id).to.eql(pm.environment.get('usuario_id')); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/usuarios/{{usuario_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "usuarios", "{{usuario_id}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Matrices",
+      "item": [
+        {
+          "name": "Crear matriz",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () { pm.response.to.have.status(201); });",
+                  "const data = pm.response.json();",
+                  "pm.environment.set('matriz_id', data._id);",
+                  "pm.test('Matriz result includes numeroVida', function () { pm.expect(data.numeroVida).to.eql(5); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usuario_id\": \"{{usuario_id}}\",\n  \"numeroVida\": 5,\n  \"numeroDestino\": 7,\n  \"descripcion\": \"Descripcion prueba\",\n  \"resultado\": \"Resultado prueba\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/matricesNumerologicas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "matricesNumerologicas"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Obtener matriz sin populate",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "const data = pm.response.json();",
+                  "pm.test('usuario_id is raw ObjectId string', function () { pm.expect(data.usuario_id).to.be.a('string'); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/matricesNumerologicas/{{matriz_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "matricesNumerologicas", "{{matriz_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Obtener matriz con populate",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "const data = pm.response.json();",
+                  "pm.test('usuario_id is populated object', function () { pm.expect(data.usuario_id).to.be.an('object'); });",
+                  "pm.test('populate object id matches usuario_id', function () { pm.expect(data.usuario_id._id).to.eql(pm.environment.get('usuario_id')); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/matricesNumerologicas/completa/{{matriz_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "matricesNumerologicas", "completa", "{{matriz_id}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Lecturas",
+      "item": [
+        {
+          "name": "Crear prompt activo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () { pm.response.to.have.status(201); });",
+                  "const data = pm.response.json();",
+                  "pm.environment.set('prompt_id', data._id);",
+                  "pm.test('Prompt activo por defecto', function () { pm.expect(data.activo).to.be.true; });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Prompt Lectura Activa\",\n  \"prompt\": \"Generar lectura con prompt activo\",\n  \"descripcion\": \"Prompt activo para pruebas\",\n  \"categoria\": \"numerologia\",\n  \"tipo_lectura\": \"general\",\n  \"creadoPor\": \"{{usuario_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/promptsConfig",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "promptsConfig"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Crear prompt inactivo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () { pm.response.to.have.status(201); });",
+                  "const data = pm.response.json();",
+                  "pm.environment.set('prompt_id_inactive', data._id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Prompt Inactivo\",\n  \"prompt\": \"Prompt inactivo para error\",\n  \"descripcion\": \"Prompt inactivo\",\n  \"categoria\": \"numerologia\",\n  \"tipo_lectura\": \"amor\",\n  \"creadoPor\": \"{{usuario_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/promptsConfig",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "promptsConfig"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Desactivar prompt inactivo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "const data = pm.response.json();",
+                  "pm.test('Prompt ahora inactivo', function () { pm.expect(data.activo).to.be.false; });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"activo\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/promptsConfig/{{prompt_id_inactive}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "promptsConfig", "{{prompt_id_inactive}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Crear lectura con prompt activo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () { pm.response.to.have.status(201); });",
+                  "const data = pm.response.json();",
+                  "pm.environment.set('lectura_id', data.lectura._id);",
+                  "pm.environment.set('bitacora_id', data.bitacora._id);",
+                  "pm.test('Lectura returned', function () { pm.expect(data.lectura).to.have.property('_id'); });",
+                  "pm.test('Bitacora created related to lectura', function () { pm.expect(data.bitacora.lectura_id).to.eql(data.lectura._id); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-api-key",
+                "value": "{{api_key}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usuario_id\": \"{{usuario_id}}\",\n  \"prompt_usado_id\": \"{{prompt_id}}\",\n  \"respuesta\": \"Respuesta de prueba\",\n  \"analisis\": \"Analisis de prueba\",\n  \"metadata\": { \"fuente\": \"Postman\" },\n  \"resultado\": \"Exito\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/lecturasIA",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "lecturasIA"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Crear segunda lectura para historial",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () { pm.response.to.have.status(201); });",
+                  "const data = pm.response.json();",
+                  "pm.environment.set('lectura_id_2', data.lectura._id);",
+                  "pm.test('Second lectura exists', function () { pm.expect(data.lectura).to.have.property('_id'); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-api-key",
+                "value": "{{api_key}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usuario_id\": \"{{usuario_id}}\",\n  \"prompt_usado_id\": \"{{prompt_id}}\",\n  \"respuesta\": \"Segunda respuesta\",\n  \"analisis\": \"Segundo analisis\",\n  \"metadata\": { \"fuente\": \"Postman\" },\n  \"resultado\": \"Exito\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/lecturasIA",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "lecturasIA"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Generar lectura sin matriz",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400', function () { pm.response.to.have.status(400); });",
+                  "pm.test('Error indica ausencia de matriz', function () { pm.expect(pm.response.json().error).to.eql('No existe una matriz numerológica para este usuario'); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-api-key",
+                "value": "{{api_key}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usuario_id\": \"{{usuario_id_no_matriz}}\",\n  \"prompt_usado_id\": \"{{prompt_id}}\",\n  \"respuesta\": \"Sin matriz\",\n  \"analisis\": \"No hay matriz\",\n  \"metadata\": { \"fuente\": \"Postman\" },\n  \"resultado\": \"Fallo\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/lecturasIA",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "lecturasIA"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Generar lectura con prompt inactivo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400', function () { pm.response.to.have.status(400); });",
+                  "pm.test('Error indica prompt inactivo', function () { pm.expect(pm.response.json().error).to.eql('El prompt no existe o no está activo'); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-api-key",
+                "value": "{{api_key}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usuario_id\": \"{{usuario_id}}\",\n  \"prompt_usado_id\": \"{{prompt_id_inactive}}\",\n  \"respuesta\": \"Prompt inactivo\",\n  \"analisis\": \"Prompt no activo\",\n  \"metadata\": { \"fuente\": \"Postman\" },\n  \"resultado\": \"Fallo\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/lecturasIA",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "lecturasIA"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Generar lectura con API key inválida",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 401', function () { pm.response.to.have.status(401); });",
+                  "pm.test('Error indica api key inválida', function () { pm.expect(pm.response.json().error).to.eql('API key inválida'); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-api-key",
+                "value": "invalid_key"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usuario_id\": \"{{usuario_id}}\",\n  \"prompt_usado_id\": \"{{prompt_id}}\",\n  \"respuesta\": \"API key inválida\",\n  \"analisis\": \"Fallo\",\n  \"metadata\": { \"fuente\": \"Postman\" },\n  \"resultado\": \"Fallo\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/lecturasIA",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "lecturasIA"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Obtener lectura detallada (populate tipo_lectura)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "const data = pm.response.json();",
+                  "pm.test('Prompt incluido tiene tipo_lectura', function () { pm.expect(data.prompt_usado_id.tipo_lectura).to.exist; });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/lecturasIA/detallada/{{lectura_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "lecturasIA", "detallada", "{{lectura_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Obtener historial de lecturas",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "const data = pm.response.json();",
+                  "pm.test('Hay más de una lectura', function () { pm.expect(data.length).to.be.above(1); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/lecturasIA",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "lecturasIA"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Obtener bitácora por ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "const data = pm.response.json();",
+                  "pm.test('Bitacora exists', function () { pm.expect(data._id).to.eql(pm.environment.get('bitacora_id')); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/bitacoraTransacciones/{{bitacora_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "bitacoraTransacciones", "{{bitacora_id}}"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

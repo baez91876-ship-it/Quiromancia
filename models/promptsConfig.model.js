@@ -6,6 +6,7 @@ const promptsConfigSchema = new mongoose.Schema({
     descripcion: { type: String, trim: true },
     activo: { type: Boolean, default: true },
     categoria: { type: String, trim: true },
+    tipo_lectura: { type: String, trim: true },
     creadoPor: { type: mongoose.Schema.Types.ObjectId, ref: "Usuario" },
 }, {
     timestamps: true,

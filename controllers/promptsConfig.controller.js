@@ -2,8 +2,8 @@ import { PromptConfig } from "../models/promptsConfig.model.js";
 
 export const createPromptConfig = async (req, res) => {
     try {
-        const { nombre, prompt, descripcion, activo, categoria, creadoPor } = req.body;
-        const promptConfig = new PromptConfig({ nombre, prompt, descripcion, activo, categoria, creadoPor });
+        const { nombre, prompt, descripcion, categoria, tipo_lectura, creadoPor } = req.body;
+        const promptConfig = new PromptConfig({ nombre, prompt, descripcion, categoria, tipo_lectura, creadoPor });
         await promptConfig.save();
         return res.status(201).json(promptConfig);
     } catch (error) {
@@ -36,10 +36,10 @@ export const getPromptConfigById = async (req, res) => {
 export const updatePromptConfig = async (req, res) => {
     try {
         const { id } = req.params;
-        const { nombre, prompt, descripcion, activo, categoria, creadoPor } = req.body;
+        const { nombre, prompt, descripcion, activo, categoria, tipo_lectura, creadoPor } = req.body;
         const promptConfig = await PromptConfig.findByIdAndUpdate(
             id,
-            { nombre, prompt, descripcion, activo, categoria, creadoPor },
+            { nombre, prompt, descripcion, activo, categoria, tipo_lectura, creadoPor },
             { new: true, runValidators: true }
         );
         if (!promptConfig) {

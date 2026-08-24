@@ -7,6 +7,9 @@ export const createUsuario = async (req, res) => {
         await usuario.save();
         return res.status(201).json(usuario);
     } catch (error) {
+        if (error.code === 11000 && error.keyPattern && error.keyPattern.email) {
+            return res.status(400).json({ error: 'El email ya está registrado' });
+        }
         return res.status(500).json({ error: error.message });
     }
 };

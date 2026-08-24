@@ -26,27 +26,47 @@ const start = async () => {
 start()
 
 
-const usuarios = [
-]
+const usuarios = {
+
+}
 
 
-const lineaspalmares = [
+const lineaspalmares = {
 
-]
+}
+
 const perfilnumerologico = {
 
 }
 
 const lecturanumero = {
+
 }
 
 const alma = {
 
 }
+
 const interpretacion = {
 
 }
+
 const  destino = {
   
 }
 
+const  salud = {
+
+}
+
+const  amor = {
+
+}
+
+const  trabajo = {
+
+}
+
+const  familia = {
+
+}

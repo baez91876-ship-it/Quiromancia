@@ -1,11 +1,36 @@
 import { LecturaIA } from "../models/lecturasIA.model.js";
+import { PromptConfig } from "../models/promptsConfig.model.js";
+import { MatrizNumerologica } from "../models/matricesNumerologicas.model.js";
+import { BitacoraTransaccion } from "../models/bitacoraTransacciones.model.js";
 
 export const createLecturaIA = async (req, res) => {
     try {
         const { usuario_id, prompt_usado_id, respuesta, analisis, metadata, resultado } = req.body;
+
+        const prompt = await PromptConfig.findById(prompt_usado_id);
+        if (!prompt || !prompt.activo) {
+            return res.status(400).json({ error: "El prompt no existe o no está activo" });
+        }
+
+        const matriz = await MatrizNumerologica.findOne({ usuario_id });
+        if (!matriz) {
+            return res.status(400).json({ error: "No existe una matriz numerológica para este usuario" });
+        }
+
         const lectura = new LecturaIA({ usuario_id, prompt_usado_id, respuesta, analisis, metadata, resultado });
         await lectura.save();
-        return res.status(201).json(lectura);
+
+        const bitacora = new BitacoraTransaccion({
+            usuario_id,
+            lectura_id: lectura._id,
+            tipo: "lectura",
+            monto: 0,
+            estado: "completado",
+            detalles: "Lectura generada con prompt activo",
+        });
+        await bitacora.save();
+
+        return res.status(201).json({ lectura, bitacora });
     } catch (error) {
         return res.status(500).json({ error: error.message });
     }
