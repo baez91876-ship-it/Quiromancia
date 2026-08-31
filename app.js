@@ -27,46 +27,90 @@ start()
 
 
 const usuarios = {
-
+id,
+    nombre,
+    correo,
+    fecha_nacimiento,
+    fecha_registro,
+    genero,
 }
 
 
 const lineaspalmares = {
-
+id,
+    usuario_id,
+    linea_vida,
+    linea_corazon,
+    linea_cabeza,
 }
 
 const perfilnumerologico = {
-
+id,
+    usuario_id,
+    numero_vida,
+    numero_expresion,
+    descripcion,
 }
 
 const lecturanumero = {
-
+id,
+    usuario_id,
+    fecha_lectura,
+    resultado,
 }
 
 const alma = {
-
+id,
+    usuario_id,
+    numero_alma,
+    deseo_profundo,
 }
 
 const interpretacion = {
-
+id,
+    usuario_id,
+    tipo_lectura,
+    mensaje_general,
 }
 
 const  destino = {
-  
+id,
+    usuario_id,
+    numero_destino,
+    camino_futuro,
 }
 
 const  salud = {
-
+id,
+    usuario_id,
+    estado_energetico,
+    recomendaciones,
 }
 
 const  amor = {
-
+id,
+    usuario_id,
+    compatibilidad,
+    prediccion_romantica,
 }
 
 const  trabajo = {
-
+id,
+    usuario_id,
+    talentos_ocultos,   
+    proyeccion_laboral,
 }
 
 const  familia = {
+id,
+    usuario_id,
+    dinamica_hogar,
+    lazos_karmicos,
+}
 
+const  espiritualidad = {
+id,
+    usuario_id,
+    nivel_conciencia,
+    guia_espiritual,
 }
