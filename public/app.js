@@ -68,13 +68,17 @@ async function cargarCatalogos() {
   } catch (error) {
     completarSelect(usuarioSelect, [], 'No hay usuarios disponibles');
     completarSelect(promptSelect, [], 'No hay prompts disponibles');
-    lecturasStatus.textContent = error.message;
+    if (lecturasStatus) {
+      lecturasStatus.textContent = error.message;
+    }
   }
 }
 
 async function cargarLecturas() {
   try {
-    lecturasStatus.textContent = 'Cargando lecturas...';
+    if (lecturasStatus) {
+      lecturasStatus.textContent = 'Cargando lecturas...';
+    }
 
     const res = await fetch('/api/v1/lecturasIA');
     if (!res.ok) {
@@ -84,32 +88,102 @@ async function cargarLecturas() {
     const lecturas = await res.json();
 
     if (!Array.isArray(lecturas) || lecturas.length === 0) {
-      lecturasList.innerHTML = '<li class="empty-state">No hay lecturas registradas todavía.</li>';
-      lecturasStatus.textContent = 'Sin lecturas disponibles';
+      if (lecturasList) {
+        lecturasList.innerHTML = '<li class="empty-state">No hay lecturas registradas todavía.</li>';
+      }
+      if (lecturasStatus) {
+        lecturasStatus.textContent = 'Sin lecturas disponibles';
+      }
       return;
     }
 
-    lecturasList.innerHTML = lecturas
-      .slice(0, 10)
-      .map((lectura) => {
-        const fecha = lectura.fecha ? new Date(lectura.fecha).toLocaleString() : 'Sin fecha';
-        const resultado = lectura.resultado || 'Sin resultado';
-        const analisis = lectura.analisis || 'Sin análisis';
+    if (lecturasList) {
+      lecturasList.innerHTML = lecturas
+        .slice(0, 10)
+        .map((lectura) => {
+          const fecha = lectura.fecha ? new Date(lectura.fecha).toLocaleString() : 'Sin fecha';
+          const resultado = lectura.resultado || 'Sin resultado';
+          const analisis = lectura.analisis || 'Sin análisis';
 
-        return `
-          <li class="lectura-item">
-            <strong>${resultado}</strong>
-            <div class="lectura-meta">${fecha}</div>
-            <div class="lectura-meta">${analisis}</div>
-          </li>
-        `;
-      })
-      .join('');
+          return `
+            <li class="lectura-item">
+              <strong>${resultado}</strong>
+              <div class="lectura-meta">${fecha}</div>
+              <div class="lectura-meta">${analisis}</div>
+            </li>
+          `;
+        })
+        .join('');
+    }
 
-    lecturasStatus.textContent = `Mostrando ${lecturas.length} lectura(s).`;
+    if (lecturasStatus) {
+      lecturasStatus.textContent = `Mostrando ${lecturas.length} lectura(s).`;
+    }
   } catch (error) {
-    lecturasStatus.textContent = 'No se pudieron cargar las lecturas.';
-    lecturasList.innerHTML = `<li class="empty-state">${error.message}</li>`;
+    if (lecturasStatus) {
+      lecturasStatus.textContent = 'No se pudieron cargar las lecturas.';
+    }
+    if (lecturasList) {
+      lecturasList.innerHTML = `<li class="empty-state">${error.message}</li>`;
+    }
+  }
+}
+
+async function crearUsuario(event) {
+  event.preventDefault();
+
+  const form = event.currentTarget;
+  const formData = new FormData(form);
+  const payload = {
+    nombre: String(formData.get('nombre') || '').trim(),
+    email: String(formData.get('email') || '').trim(),
+    telefono: String(formData.get('telefono') || '').trim(),
+    genero: String(formData.get('genero') || 'Otro').trim(),
+    fechaNacimiento: String(formData.get('fechaNacimiento') || '').trim(),
+    password: String(formData.get('password') || '').trim(),
+  };
+
+  if (!payload.nombre || !payload.email || !payload.password) {
+    const msg = document.getElementById('usuarioFormMessage');
+    if (msg) {
+      msg.textContent = 'Nombre, email y contraseña son obligatorios.';
+      msg.className = 'form-message error';
+    }
+    return;
+  }
+
+  try {
+    const msg = document.getElementById('usuarioFormMessage');
+    if (msg) {
+      msg.textContent = 'Guardando usuario...';
+      msg.className = 'form-message';
+    }
+
+    const res = await fetch('/api/v1/usuarios', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    const body = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      throw new Error(body.error || 'No se pudo crear el usuario');
+    }
+
+    if (msg) {
+      msg.textContent = 'Usuario creado correctamente.';
+      msg.className = 'form-message success';
+    }
+
+    form.reset();
+    await cargarCatalogos();
+  } catch (error) {
+    const msg = document.getElementById('usuarioFormMessage');
+    if (msg) {
+      msg.textContent = error.message;
+      msg.className = 'form-message error';
+    }
   }
 }
 
@@ -166,7 +240,8 @@ async function crearLectura(event) {
     formMessage.textContent = 'Lectura creada correctamente.';
     formMessage.className = 'form-message success';
     lecturaForm.reset();
-    document.getElementById('metadata').value = '{"fuente":"web"}';
+    const metadataField = document.getElementById('metadata');
+    if (metadataField) metadataField.value = '{"fuente":"web"}';
     await cargarLecturas();
   } catch (error) {
     formMessage.textContent = error.message;
@@ -176,6 +251,7 @@ async function crearLectura(event) {
 
 btnLecturas?.addEventListener('click', cargarLecturas);
 refreshLecturas?.addEventListener('click', cargarLecturas);
+document.getElementById('usuarioForm')?.addEventListener('submit', crearUsuario);
 lecturaForm?.addEventListener('submit', crearLectura);
 
 window.cargarCatalogos = cargarCatalogos;
