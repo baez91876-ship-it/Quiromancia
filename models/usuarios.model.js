@@ -6,6 +6,7 @@ const usuarioSchema = new mongoose.Schema({
     fechaNacimiento: { type: Date },
     genero: { type: String, enum: ["M", "F", "Otro"], default: "Otro" },
     telefono: { type: String, trim: true },
+    password: { type: String, required: true, select: false },
 }, {
     timestamps: true,
 });

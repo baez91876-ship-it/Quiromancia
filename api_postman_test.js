@@ -19,6 +19,7 @@ const run = async () => {
       fechaNacimiento: '1990-01-01',
       genero: 'M',
       telefono: '5551234567',
+      password: 'claveSegura123',
     }),
   });
   console.log(json(user));

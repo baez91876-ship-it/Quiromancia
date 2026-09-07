@@ -9,9 +9,11 @@ import {
 import { usuarioCreateValidator, usuarioUpdateValidator } from "../src/validators/usuario.validator.js";
 import { idValidator } from "../src/validators/id.validator.js";
 import { validarCampos } from "../src/middlewares/validarCampos.js";
+import { login } from "../middlewares/token.js";
 
 const router = Router();
 
+router.post("/login", login);
 router.post("/", usuarioCreateValidator, validarCampos, createUsuario);
 router.get("/", getUsuarios);
 router.get("/:id", idValidator, validarCampos, getUsuarioById);

@@ -1,16 +1,22 @@
-import { Usuario } from "../models/usuarios.model.js";
+import bcryptjs from 'bcryptjs';
+import { Usuario } from '../models/usuarios.model.js';
 
 export const createUsuario = async (req, res) => {
     try {
-        const { nombre, email, fechaNacimiento, genero, telefono } = req.body;
-        const usuario = new Usuario({ nombre, email, fechaNacimiento, genero, telefono });
+        const { nombre, email, fechaNacimiento, genero, telefono, password } = req.body;
+
+        const salt = bcryptjs.genSaltSync();
+        const hashedPassword = bcryptjs.hashSync(password, salt);
+
+        const usuario = new Usuario({ nombre, email, fechaNacimiento, genero, telefono, password: hashedPassword });
         await usuario.save();
-        return res.status(201).json(usuario);
+
+        const usuarioSinPassword = usuario.toObject();
+        delete usuarioSinPassword.password;
+
+        return res.status(201).json(usuarioSinPassword);
     } catch (error) {
-        if (error.code === 11000 && error.keyPattern && error.keyPattern.email) {
-            return res.status(400).json({ error: 'El email ya está registrado' });
-        }
-        return res.status(500).json({ error: error.message });
+        return res.status(400).json({ error: error.message });
     }
 };
 
@@ -27,9 +33,11 @@ export const getUsuarioById = async (req, res) => {
     try {
         const { id } = req.params;
         const usuario = await Usuario.findById(id);
+
         if (!usuario) {
-            return res.status(404).json({ error: "Usuario no encontrado" });
+            return res.status(404).json({ error: 'Usuario no encontrado' });
         }
+
         return res.status(200).json(usuario);
     } catch (error) {
         return res.status(500).json({ error: error.message });
@@ -39,29 +47,31 @@ export const getUsuarioById = async (req, res) => {
 export const updateUsuario = async (req, res) => {
     try {
         const { id } = req.params;
-        const { nombre, email, fechaNacimiento, genero, telefono } = req.body;
-        const usuario = await Usuario.findByIdAndUpdate(
-            id,
-            { nombre, email, fechaNacimiento, genero, telefono },
-            { new: true, runValidators: true }
-        );
-        if (!usuario) {
-            return res.status(404).json({ error: "Usuario no encontrado" });
+        const usuarioActualizado = await Usuario.findByIdAndUpdate(id, req.body, {
+            new: true,
+            runValidators: true,
+        });
+
+        if (!usuarioActualizado) {
+            return res.status(404).json({ error: 'Usuario no encontrado' });
         }
-        return res.status(200).json(usuario);
+
+        return res.status(200).json(usuarioActualizado);
     } catch (error) {
-        return res.status(500).json({ error: error.message });
+        return res.status(400).json({ error: error.message });
     }
 };
 
 export const deleteUsuario = async (req, res) => {
     try {
         const { id } = req.params;
-        const usuario = await Usuario.findByIdAndDelete(id);
-        if (!usuario) {
-            return res.status(404).json({ error: "Usuario no encontrado" });
+        const usuarioEliminado = await Usuario.findByIdAndDelete(id);
+
+        if (!usuarioEliminado) {
+            return res.status(404).json({ error: 'Usuario no encontrado' });
         }
-        return res.status(200).json({ message: "Usuario eliminado correctamente" });
+
+        return res.status(200).json({ message: 'Usuario eliminado correctamente' });
     } catch (error) {
         return res.status(500).json({ error: error.message });
     }

@@ -19,13 +19,9 @@ const connectMongo = async (uri) => {
 };
 
 export const cnxmongo = async () => {
-    const uri = process.env.MONGO_URI;
+    const uri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/quiromancia';
 
-    if (!uri) {
-        throw new Error('La variable de entorno MONGO_URI no está definida. Agrega tu URI en el archivo .env');
-    }
-
-    const maxRetries = 5;
+    const maxRetries = 3;
     let attempt = 0;
     let lastError;
 
@@ -33,11 +29,11 @@ export const cnxmongo = async () => {
         try {
             await connectMongo(uri);
             console.log('Conectado a MongoDB');
-            return;
+            return true;
         } catch (error) {
             lastError = error;
             attempt += 1;
-            console.error(`Intento ${attempt}/${maxRetries} fallido:`, error.message);
+            console.warn(`Intento ${attempt}/${maxRetries} fallido para MongoDB:`, error.message);
             if (attempt < maxRetries) {
                 console.log('Reintentando conexión a MongoDB en 5 segundos...');
                 await delay(5000);
@@ -45,5 +41,6 @@ export const cnxmongo = async () => {
         }
     }
 
-    throw lastError;
+    console.warn('MongoDB no está disponible; la aplicación continuará en modo local sin base de datos.');
+    return false;
 };

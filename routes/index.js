@@ -5,13 +5,13 @@ import promptsConfigRoutes from "./promptsConfig.routes.js";
 import lecturasIARoutes from "./lecturasIA.routes.js";
 import bitacoraTransaccionesRoutes from "./bitacoraTransacciones.routes.js";
 
-const app = express();
+const router = express.Router();
 
-app.use(express.json());
-app.use("/usuarios", usuariosRoutes);
-app.use("/matricesNumerologicas", matricesNumerologicasRoutes);
-app.use("/promptsConfig", promptsConfigRoutes);
-app.use("/lecturasIA", lecturasIARoutes);
-app.use("/bitacoraTransacciones", bitacoraTransaccionesRoutes);
+router.use(express.json());
+router.use("/usuarios", usuariosRoutes);
+router.use("/matricesNumerologicas", matricesNumerologicasRoutes);
+router.use("/promptsConfig", promptsConfigRoutes);
+router.use("/lecturasIA", lecturasIARoutes);
+router.use("/bitacoraTransacciones", bitacoraTransaccionesRoutes);
 
-export default app;
+export default router;

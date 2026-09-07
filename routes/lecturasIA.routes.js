@@ -14,8 +14,8 @@ import { validarApiKey } from "../src/middlewares/validarApiKey.js";
 
 const router = Router();
 
-router.post("/", validarApiKey, lecturaCreateValidator, validarCampos, createLecturaIA);
 router.get("/", getLecturasIA);
+router.post("/", validarApiKey, lecturaCreateValidator, validarCampos, createLecturaIA);
 router.get("/detallada/:id", idValidator, validarCampos, getLecturaCompleta);
 router.get("/:id", idValidator, validarCampos, getLecturaIAById);
 router.put("/:id", idValidator, lecturaUpdateValidator, validarCampos, updateLecturaIA);

@@ -6,6 +6,7 @@ export const usuarioCreateValidator = [
     body("fechaNacimiento", "La fecha de nacimiento es obligatoria").notEmpty().isISO8601(),
     body("genero", "El género es obligatorio").notEmpty().isIn(["M", "F", "Otro"]),
     body("telefono", "El teléfono es obligatorio").notEmpty().trim(),
+    body("password", "La contraseña debe tener al menos 6 caracteres").isLength({ min: 6 }),
 ];
 
 export const usuarioUpdateValidator = [
