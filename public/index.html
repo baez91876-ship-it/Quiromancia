@@ -14,18 +14,21 @@
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <style>
       :root {
-        --bg: #120d1d;
-        --bg-soft: #1b1328;
-        --panel: rgba(30, 22, 42, 0.94);
-        --panel-alt: rgba(39, 30, 58, 0.9);
-        --primary: #d4af37;
-        --text: #f7f2ff;
-        --muted: #d4c6eb;
-        --accent: #7c5cff;
-        --danger: #ff6b6b;
-        --success: #8de5a9;
-        --border: rgba(212, 175, 55, 0.32);
-        --field: rgba(10, 8, 14, 0.35);
+        --bg-1: #0f1226;
+        --bg-2: #171d35;
+        --panel: rgba(19, 24, 41, 0.82);
+        --panel-strong: rgba(28, 33, 57, 0.96);
+        --panel-soft: rgba(255, 255, 255, 0.04);
+        --primary: #f5c451;
+        --primary-strong: #d9a226;
+        --accent: #7c8cff;
+        --text: #eef3ff;
+        --muted: #c3ccea;
+        --success: #7ce8b2;
+        --danger: #ff7a7a;
+        --border: rgba(255, 255, 255, 0.1);
+        --field: rgba(10, 14, 26, 0.68);
+        --shadow: rgba(2, 6, 23, 0.42);
       }
 
       * {
@@ -39,12 +42,12 @@
       body {
         margin: 0;
         min-height: 100vh;
-        font-family: Arial, Helvetica, sans-serif;
-        background: radial-gradient(circle at top, #261d39 0%, var(--bg) 45%, #0f0b17 100%);
+        padding: 32px 18px;
+        background: linear-gradient(135deg, var(--bg-1) 0%, var(--bg-2) 50%, #0d1324 100%);
         color: var(--text);
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
         display: grid;
         place-items: center;
-        padding: 24px;
       }
 
       button,
@@ -55,55 +58,60 @@
       }
 
       .app-shell {
-        width: min(980px, 100%);
-        background: var(--panel);
+        width: min(1024px, 100%);
+        background: rgba(17, 20, 31, 0.82);
         border: 1px solid var(--border);
-        border-radius: 24px;
+        border-radius: 28px;
+        box-shadow: 0 28px 72px var(--shadow);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
         padding: 28px;
-        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
       }
 
       .topbar {
         display: flex;
-        align-items: center;
         justify-content: space-between;
+        align-items: center;
         gap: 16px;
-        margin-bottom: 20px;
+        margin-bottom: 18px;
       }
 
       .eyebrow {
         display: inline-block;
-        margin: 0 0 8px;
-        font-size: 0.72rem;
-        letter-spacing: 0.2em;
+        margin-bottom: 8px;
+        letter-spacing: 0.18em;
         text-transform: uppercase;
         color: var(--primary);
+        font-size: 0.7rem;
+        font-weight: 700;
       }
 
       h1 {
         margin: 0;
-        font-size: clamp(2rem, 5vw, 3.1rem);
-        color: var(--primary);
+        font-size: clamp(2.1rem, 4vw, 3.2rem);
+        letter-spacing: -0.04em;
+        color: var(--text);
       }
 
       h2 {
         margin: 0;
-        color: var(--text);
-        font-size: 1.45rem;
+        font-size: 1.35rem;
+        letter-spacing: -0.03em;
       }
 
       .intro {
-        margin: 18px 0 0;
+        margin: 14px 0 0;
+        max-width: 760px;
         color: var(--muted);
         line-height: 1.7;
-        max-width: 780px;
+        font-size: 1rem;
       }
 
       .badges {
         display: flex;
-        flex-wrap: wrap;
         gap: 10px;
-        margin: 22px 0 0;
+        flex-wrap: wrap;
+        margin-top: 22px;
       }
 
       .badge {
@@ -111,10 +119,11 @@
         align-items: center;
         padding: 0.7rem 1rem;
         border-radius: 999px;
-        background: rgba(124, 92, 255, 0.14);
-        border: 1px solid rgba(124, 92, 255, 0.45);
+        background: rgba(124, 140, 255, 0.12);
+        border: 1px solid rgba(124, 140, 255, 0.35);
         color: var(--text);
-        font-size: 0.92rem;
+        font-weight: 600;
+        font-size: 0.9rem;
       }
 
       .actions {
@@ -126,17 +135,16 @@
 
       .button {
         appearance: none;
-        display: inline-flex;
-        justify-content: center;
-        align-items: center;
-        min-height: 44px;
-        border-radius: 12px;
         border: 1px solid transparent;
-        padding: 0.85rem 1.2rem;
+        border-radius: 12px;
+        padding: 0.9rem 1.25rem;
         font-weight: 700;
         text-decoration: none;
-        transition: transform 0.2s ease, opacity 0.2s ease, border-color 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         cursor: pointer;
+        transition: transform 0.18s ease, box-shadow 0.2s ease, opacity 0.2s ease;
       }
 
       .button:hover {
@@ -144,35 +152,24 @@
         opacity: 0.98;
       }
 
-      .button:focus-visible,
-      select:focus-visible,
-      input:focus-visible,
-      textarea:focus-visible {
-        outline: 2px solid var(--accent);
-        outline-offset: 2px;
-      }
-
       .button.primary {
-        background: var(--primary);
-        color: #120d1d;
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-strong) 100%);
+        color: #131722;
+        box-shadow: 0 10px 24px rgba(245, 196, 81, 0.28);
       }
 
       .button.secondary {
-        background: transparent;
-        border-color: var(--primary);
+        background: rgba(255, 255, 255, 0.02);
+        border-color: rgba(245, 196, 81, 0.42);
         color: var(--text);
       }
 
       .panel {
-        background: var(--panel-alt);
-        border: 1px solid rgba(255, 255, 255, 0.06);
-        border-radius: 18px;
-        padding: 18px;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 20px;
         margin-top: 24px;
-      }
-
-      .panel-alt {
-        margin-top: 28px;
       }
 
       .section-head {
@@ -198,7 +195,6 @@
         display: grid;
         gap: 8px;
         color: var(--muted);
-        font-size: 0.95rem;
       }
 
       label span {
@@ -209,15 +205,30 @@
       select,
       textarea {
         width: 100%;
-        border: 1px solid rgba(255, 255, 255, 0.12);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
         background: var(--field);
         color: var(--text);
-        border-radius: 10px;
-        padding: 0.8rem 0.9rem;
+        padding: 0.9rem 1rem;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      input:hover,
+      select:hover,
+      textarea:hover {
+        border-color: rgba(124, 140, 255, 0.45);
+      }
+
+      input:focus,
+      select:focus,
+      textarea:focus {
+        outline: none;
+        border-color: rgba(124, 140, 255, 0.75);
+        box-shadow: 0 0 0 3px rgba(124, 140, 255, 0.15);
       }
 
       textarea {
-        min-height: 100px;
+        min-height: 110px;
         resize: vertical;
       }
 
@@ -231,6 +242,7 @@
       .form-message {
         min-height: 20px;
         color: var(--muted);
+        font-weight: 600;
       }
 
       .form-message.success {
@@ -255,9 +267,9 @@
       }
 
       .lectura-item {
-        background: rgba(255, 255, 255, 0.03);
+        background: var(--panel-soft);
         border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 12px;
+        border-radius: 14px;
         padding: 14px 16px;
       }
 
@@ -275,12 +287,13 @@
 
       .empty-state {
         color: var(--muted);
-        padding: 12px 0;
+        padding: 10px 0;
       }
 
       @media (max-width: 700px) {
         .app-shell {
           padding: 20px 16px;
+          border-radius: 22px;
         }
 
         .topbar {
