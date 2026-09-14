@@ -14,7 +14,7 @@
   "scripts": {
     "start": "node app.js",
     "dev": "nodemon app.js",
-    "test": "echo \"No tests specified\" && exit 0"
+    "test": "node --test"
   },
   "type": "module",
   "repository": {

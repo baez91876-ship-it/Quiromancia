@@ -5,6 +5,7 @@ import {
     getUsuarioById,
     updateUsuario,
     deleteUsuario,
+    getPerfilNumerologico,
 } from "../controllers/usuarios.controller.js";
 import { loginValidator, usuarioCreateValidator, usuarioUpdateValidator } from "../src/validators/usuario.validator.js";
 import { idValidator } from "../src/validators/id.validator.js";
@@ -16,6 +17,7 @@ const router = Router();
 router.post("/login", loginValidator, validarCampos, login);
 router.post("/", usuarioCreateValidator, validarCampos, createUsuario);
 router.get("/", getUsuarios);
+router.get("/:id/perfil-numerologico", idValidator, validarCampos, getPerfilNumerologico);
 router.get("/:id", idValidator, validarCampos, getUsuarioById);
 router.put("/:id", idValidator, usuarioUpdateValidator, validarCampos, updateUsuario);
 router.delete("/:id", idValidator, validarCampos, deleteUsuario);

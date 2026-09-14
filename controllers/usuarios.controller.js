@@ -1,6 +1,7 @@
 import bcryptjs from 'bcryptjs';
 import { Usuario } from '../models/usuarios.model.js';
 import { LecturaIA } from '../models/lecturasIA.model.js';
+import { calcularPerfilNumerologico } from '../src/services/numerologia.service.js';
 
 export const createUsuario = async (req, res) => {
     try {
@@ -90,5 +91,28 @@ export const deleteUsuario = async (req, res) => {
         return res.status(200).json({ message: 'Usuario eliminado correctamente' });
     } catch (error) {
         return res.status(500).json({ error: error.message });
+    }
+};
+
+export const getPerfilNumerologico = async (req, res) => {
+    try {
+        const usuario = await Usuario.findById(req.params.id).select('nombre fechaNacimiento email');
+        if (!usuario) {
+            return res.status(404).json({ error: 'Usuario no encontrado' });
+        }
+        if (!usuario.fechaNacimiento) {
+            return res.status(400).json({ error: 'El usuario no tiene fecha de nacimiento' });
+        }
+
+        return res.status(200).json({
+            usuario: usuario._id,
+            nombre: usuario.nombre,
+            ...calcularPerfilNumerologico({
+                nombre: usuario.nombre,
+                fechaNacimiento: usuario.fechaNacimiento,
+            }),
+        });
+    } catch (error) {
+        return res.status(500).json({ error: 'No se pudo calcular el perfil numerológico' });
     }
 };

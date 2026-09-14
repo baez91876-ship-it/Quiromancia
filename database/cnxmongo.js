@@ -1,6 +1,11 @@
 import dns from "dns";
 import mongoose from "mongoose";
 
+export const estadoMongo = () => ({
+    connected: mongoose.connection.readyState === 1,
+    state: mongoose.connection.readyState,
+});
+
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const connectMongo = async (uri) => {
@@ -19,7 +24,10 @@ const connectMongo = async (uri) => {
 };
 
 export const cnxmongo = async () => {
-    const uri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/quiromancia';
+    const uri = process.env.MONGO_URI;
+    if (!uri) {
+        throw new Error('MONGO_URI no está configurada');
+    }
 
     const maxRetries = 3;
     let attempt = 0;
