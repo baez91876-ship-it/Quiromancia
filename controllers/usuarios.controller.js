@@ -1,5 +1,6 @@
 import bcryptjs from 'bcryptjs';
 import { Usuario } from '../models/usuarios.model.js';
+import { LecturaIA } from '../models/lecturasIA.model.js';
 
 export const createUsuario = async (req, res) => {
     try {
@@ -47,7 +48,15 @@ export const getUsuarioById = async (req, res) => {
 export const updateUsuario = async (req, res) => {
     try {
         const { id } = req.params;
-        const usuarioActualizado = await Usuario.findByIdAndUpdate(id, req.body, {
+        const { nombre, email, fechaNacimiento, genero, telefono } = req.body;
+        const updateData = {};
+        if (nombre !== undefined) updateData.nombre = nombre;
+        if (email !== undefined) updateData.email = email;
+        if (fechaNacimiento !== undefined) updateData.fechaNacimiento = fechaNacimiento;
+        if (genero !== undefined) updateData.genero = genero;
+        if (telefono !== undefined) updateData.telefono = telefono;
+
+        const usuarioActualizado = await Usuario.findByIdAndUpdate(id, updateData, {
             new: true,
             runValidators: true,
         });
@@ -65,6 +74,13 @@ export const updateUsuario = async (req, res) => {
 export const deleteUsuario = async (req, res) => {
     try {
         const { id } = req.params;
+        const lecturasAsociadas = await LecturaIA.countDocuments({ usuario_id: id });
+        if (lecturasAsociadas > 0) {
+            return res.status(400).json({
+                error: 'No se puede eliminar el usuario porque tiene lecturas registradas. Elimine primero sus lecturas.',
+            });
+        }
+
         const usuarioEliminado = await Usuario.findByIdAndDelete(id);
 
         if (!usuarioEliminado) {

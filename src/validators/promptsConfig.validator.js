@@ -9,19 +9,19 @@ const usuarioExists = async (id) => {
 };
 
 export const promptCreateValidator = [
-    body("nombre", "El nombre es obligatorio").notEmpty().trim(),
-    body("prompt", "El prompt es obligatorio").notEmpty().trim(),
-    body("descripcion", "La descripción es obligatoria").notEmpty().trim(),
-    body("categoria", "La categoría es obligatoria").notEmpty().trim(),
-    body("tipo_lectura", "El tipo de lectura es obligatorio").notEmpty().trim(),
+    body("nombre", "El nombre es obligatorio").trim().notEmpty().isLength({ max: 100 }),
+    body("prompt", "El prompt es obligatorio y máximo 2000 caracteres").trim().notEmpty().isLength({ max: 2000 }),
+    body("descripcion", "La descripción es obligatoria").trim().notEmpty().isLength({ max: 500 }),
+    body("categoria", "La categoría es obligatoria").trim().notEmpty(),
+    body("tipo_lectura", "El tipo de lectura es obligatorio").trim().notEmpty(),
     body("creadoPor", "El creador es obligatorio").notEmpty().isMongoId().bail().custom(usuarioExists),
 ];
 
 export const promptUpdateValidator = [
-    body("nombre").optional().notEmpty().trim(),
-    body("prompt").optional().notEmpty().trim(),
-    body("descripcion").optional().notEmpty().trim(),
-    body("categoria").optional().notEmpty().trim(),
-    body("tipo_lectura").optional().notEmpty().trim(),
+    body("nombre").optional().trim().notEmpty().isLength({ max: 100 }),
+    body("prompt").optional().trim().notEmpty().isLength({ max: 2000 }),
+    body("descripcion").optional().trim().notEmpty().isLength({ max: 500 }),
+    body("categoria").optional().trim().notEmpty(),
+    body("tipo_lectura").optional().trim().notEmpty(),
     body("creadoPor").optional().isMongoId().bail().custom(usuarioExists),
 ];
