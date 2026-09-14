@@ -5,7 +5,7 @@ import {
     reducirNumero,
     sumarFechaNacimiento,
     sumarNombre,
-} from "../src/services/numerologia.service.js";
+} from "../../services/numerologia.service.js";
 
 test("reduce una suma numerológica a un dígito", () => {
     assert.equal(reducirNumero(1990), 1);
