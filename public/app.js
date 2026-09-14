@@ -1,244 +1,37 @@
-const lecturasList = document.getElementById('lecturasList');
-const lecturasStatus = document.getElementById('lecturasStatus');
-const btnLecturas = document.getElementById('btnLecturas');
-const refreshLecturas = document.getElementById('refreshLecturas');
-const lecturaForm = document.getElementById('lecturaForm');
-const usuarioSelect = document.getElementById('usuarioId');
-const promptSelect = document.getElementById('promptId');
-const formMessage = document.getElementById('formMessage');
-const API_KEY = 'secret123';
+const $ = (selector) => document.querySelector(selector);
+const usersKey = 'quiromancia_users';
+const sessionKey = 'quiromancia_session';
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+let toastTimer;
+const users = () => JSON.parse(localStorage.getItem(usersKey) || '[]');
+const saveUsers = (value) => localStorage.setItem(usersKey, JSON.stringify(value));
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const showToast = (message, type = 'success') => { clearTimeout(toastTimer); const toast = $('#toast'); toast.textContent = message; toast.className = `toast ${type} show`; toastTimer = setTimeout(() => { toast.className = 'toast'; }, 3500); };
+const error = (id, message = '') => { const input = $(`#${id}`); const output = $(`[data-error="${id}"]`); input?.classList.toggle('invalid', Boolean(message)); if (output) output.textContent = message; };
+const eye = (crossed = false) => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-5.5 9.5-5.5 9.5 5.5 9.5 5.5-3.5 5.5-9.5 5.5S2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.4"/>${crossed ? '<path d="m4 4 16 16"/>' : ''}</svg>`;
 
-async function enviarCuenta(event, tipo) {
-  event.preventDefault();
-  const form = event.currentTarget;
-  const message = document.getElementById(tipo === 'login' ? 'loginMessage' : 'registroMessage');
-  const payload = Object.fromEntries(new FormData(form).entries());
-  if (tipo === 'registro') payload.genero = payload.genero || 'Otro';
+function switchView(name) { $('#loginPanel').classList.toggle('active', name === 'login'); $('#registerPanel').classList.toggle('active', name === 'register'); window.location.hash = name; }
+function dashboard(user) { $('#authView').classList.remove('active'); $('#dashboardView').classList.add('active'); $('#welcomeName').textContent = user.name; loadReadings(); }
+function showAuth() { $('#dashboardView').classList.remove('active'); $('#authView').classList.add('active'); switchView('login'); }
+function strength() { const value = $('#registerPassword').value; const score = [value.length >= 8, /\d/.test(value), /[^A-Za-z0-9]/.test(value), value.length >= 12].filter(Boolean).length; $('#strengthFill').style.width = `${score * 25}%`; $('#strengthFill').style.background = score <= 1 ? 'var(--danger)' : score === 2 ? 'var(--gold)' : 'var(--success)'; $('#strengthText').textContent = ['Sin contraseña', 'Débil', 'Media', 'Fuerte', 'Muy fuerte'][score]; validateRegister(false); }
+function validateLogin(show = true) { const email = $('#loginEmail').value.trim(); const password = $('#loginPassword').value; const emailError = email && !emailPattern.test(email) ? 'Escribe un correo válido.' : ''; const passwordError = password && password.length < 8 ? 'Usa al menos 8 caracteres.' : ''; if (show) { error('loginEmail', emailError); error('loginPassword', passwordError); } return Boolean(email && password && !emailError && !passwordError); }
+function validateRegister(show = true) { const name = $('#registerName').value.trim(); const email = $('#registerEmail').value.trim(); const password = $('#registerPassword').value; const confirmation = $('#confirmPassword').value; const errors = { registerName: name ? '' : 'Escribe tu nombre completo.', registerEmail: !email ? 'El correo es obligatorio.' : !emailPattern.test(email) ? 'Escribe un correo válido.' : '', registerPassword: password && password.length >= 8 && /\d/.test(password) && /[^A-Za-z0-9]/.test(password) ? '' : 'Usa 8 caracteres, un número y un símbolo.', confirmPassword: confirmation && confirmation === password ? '' : 'Las contraseñas no coinciden.', termsAccepted: $('#termsAccepted').checked ? '' : 'Debes aceptar los términos.' }; if (show) Object.entries(errors).forEach(([id, message]) => error(id, message)); const valid = name && email && password && confirmation && !Object.values(errors).some(Boolean); $('#registerSubmit').disabled = !valid; return valid; }
+function loading(button, active, label) { button.classList.toggle('loading', active); button.disabled = active; button.querySelector('.label').textContent = active ? 'Procesando...' : label; }
 
-  message.textContent = tipo === 'login' ? 'Iniciando sesión...' : 'Creando cuenta...';
-  message.className = 'form-message';
+document.querySelectorAll('[data-switch]').forEach((button) => button.addEventListener('click', () => switchView(button.dataset.switch)));
+document.querySelectorAll('.eye').forEach((button) => { button.innerHTML = eye(); button.addEventListener('click', () => { const input = $(`#${button.dataset.eye}`); const visible = input.type === 'password'; input.type = visible ? 'text' : 'password'; button.innerHTML = eye(visible); button.setAttribute('aria-label', visible ? 'Ocultar contraseña' : 'Mostrar contraseña'); }); });
+['loginEmail', 'loginPassword'].forEach((id) => $(`#${id}`).addEventListener('input', () => validateLogin(true)));
+['registerName', 'registerEmail', 'confirmPassword'].forEach((id) => $(`#${id}`).addEventListener('input', () => validateRegister(true)));
+$('#registerPassword').addEventListener('input', strength);
+$('#termsAccepted').addEventListener('change', () => validateRegister(true));
 
-  try {
-    const response = await fetch(`/api/v1/usuarios/${tipo === 'login' ? 'login' : ''}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    const body = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(body.error || body.msg || body.errors?.[0]?.msg || 'No se pudo completar la operación');
+$('#loginForm').addEventListener('submit', async (event) => { event.preventDefault(); if (!validateLogin(true)) return; const button = event.currentTarget.querySelector('.primary'); const email = $('#loginEmail').value.trim().toLowerCase(); loading(button, true, 'Iniciar sesión'); await delay(1000); const user = users().find((item) => item.email === email && item.password === $('#loginPassword').value); loading(button, false, 'Iniciar sesión'); if (!user) { showToast('Correo o contraseña incorrectos.', 'error'); return; } localStorage.setItem(sessionKey, JSON.stringify(user)); showToast('Sesión iniciada correctamente.'); dashboard(user); });
+$('#registerForm').addEventListener('submit', async (event) => { event.preventDefault(); if (!validateRegister(true)) return; const email = $('#registerEmail').value.trim().toLowerCase(); if (users().some((item) => item.email === email)) { error('registerEmail', 'Este correo ya está registrado.'); showToast('Ese correo ya está registrado.', 'error'); return; } const button = event.currentTarget.querySelector('.primary'); loading(button, true, 'Crear cuenta'); await delay(1000); const user = { id: crypto.randomUUID?.() || String(Date.now()), name: $('#registerName').value.trim(), email, password: $('#registerPassword').value }; saveUsers([...users(), user]); localStorage.setItem(sessionKey, JSON.stringify(user)); loading(button, false, 'Crear cuenta'); showToast('Cuenta creada correctamente.'); dashboard(user); });
+$('#logoutButton').addEventListener('click', () => { localStorage.removeItem(sessionKey); showAuth(); showToast('Sesión cerrada.'); });
+$('#forgotPassword').addEventListener('click', () => { $('#modalTitle').textContent = 'Recuperar acceso'; $('#modalText').textContent = 'Esta demo no envía correos todavía. En una versión conectada, recibirías un enlace para restablecer tu contraseña.'; $('#modalBg').classList.add('show'); });
+$('#termsLink').addEventListener('click', () => { $('#modalTitle').textContent = 'Términos y privacidad'; $('#modalText').textContent = 'Esta demo guarda las cuentas únicamente en el almacenamiento local de este navegador.'; $('#modalBg').classList.add('show'); });
+$('#closeModal').addEventListener('click', () => $('#modalBg').classList.remove('show'));
 
-    if (tipo === 'login') {
-      localStorage.setItem('token', body.token);
-      localStorage.setItem('usuario', JSON.stringify(body.usuario));
-      message.textContent = `Sesión iniciada. Bienvenido, ${body.usuario.nombre}.`;
-    } else {
-      message.textContent = 'Cuenta creada correctamente. Ya puedes iniciar sesión.';
-      form.reset();
-    }
-    message.className = 'form-message success';
-  } catch (error) {
-    message.textContent = error.message;
-    message.className = 'form-message error';
-  }
-}
-
-async function obtenerUsuarios() {
-  const res = await fetch('/api/v1/usuarios');
-
-  if (!res.ok) {
-    throw new Error('No se pudieron cargar los usuarios');
-  }
-
-  const data = await res.json();
-  return Array.isArray(data) ? data : [];
-}
-
-async function obtenerPrompts() {
-  const res = await fetch('/api/v1/promptsConfig');
-
-  if (!res.ok) {
-    throw new Error('No se pudieron cargar los prompts');
-  }
-
-  const data = await res.json();
-  return Array.isArray(data) ? data : [];
-}
-
-function completarSelect(select, items, labelFallback) {
-  if (!select) return;
-
-  select.innerHTML = '';
-
-  if (!Array.isArray(items) || items.length === 0) {
-    const option = document.createElement('option');
-    option.value = '';
-    option.textContent = labelFallback;
-    select.appendChild(option);
-    return;
-  }
-
-  const placeholder = document.createElement('option');
-  placeholder.value = '';
-  placeholder.textContent = 'Selecciona una opción';
-  select.appendChild(placeholder);
-
-  items.forEach((item) => {
-    const option = document.createElement('option');
-    option.value = item._id;
-    option.textContent = item.nombre || item.prompt || item.email || item.resultado || 'Sin nombre';
-    select.appendChild(option);
-  });
-
-  if (!select.value && items[0]) {
-    select.value = items[0]._id;
-  }
-}
-
-async function cargarCatalogos() {
-  try {
-    const [usuarios, prompts] = await Promise.all([obtenerUsuarios(), obtenerPrompts()]);
-    completarSelect(usuarioSelect, usuarios, 'No hay usuarios disponibles');
-    completarSelect(promptSelect, prompts, 'No hay prompts disponibles');
-  } catch (error) {
-    completarSelect(usuarioSelect, [], 'No hay usuarios disponibles');
-    completarSelect(promptSelect, [], 'No hay prompts disponibles');
-    if (lecturasStatus) {
-      lecturasStatus.textContent = error.message;
-    }
-  }
-}
-
-async function cargarLecturas() {
-  try {
-    if (lecturasStatus) {
-      lecturasStatus.textContent = 'Cargando lecturas...';
-    }
-
-    const res = await fetch('/api/v1/lecturasIA');
-    if (!res.ok) {
-      throw new Error(`Error HTTP ${res.status}`);
-    }
-
-    const lecturas = await res.json();
-
-    if (!Array.isArray(lecturas) || lecturas.length === 0) {
-      if (lecturasList) {
-        lecturasList.innerHTML = '<li class="empty-state">No hay lecturas registradas todavía.</li>';
-      }
-      if (lecturasStatus) {
-        lecturasStatus.textContent = 'Sin lecturas disponibles';
-      }
-      return;
-    }
-
-    if (lecturasList) {
-      lecturasList.innerHTML = lecturas
-        .slice(0, 10)
-        .map((lectura) => {
-          const fecha = lectura.fecha ? new Date(lectura.fecha).toLocaleString() : 'Sin fecha';
-          const resultado = lectura.resultado || 'Sin resultado';
-          const analisis = lectura.analisis || 'Sin análisis';
-
-          return `
-            <li class="lectura-item">
-              <strong>${resultado}</strong>
-              <div class="lectura-meta">${fecha}</div>
-              <div class="lectura-meta">${analisis}</div>
-            </li>
-          `;
-        })
-        .join('');
-    }
-
-    if (lecturasStatus) {
-      lecturasStatus.textContent = `Mostrando ${lecturas.length} lectura(s).`;
-    }
-  } catch (error) {
-    if (lecturasStatus) {
-      lecturasStatus.textContent = 'No se pudieron cargar las lecturas.';
-    }
-    if (lecturasList) {
-      lecturasList.innerHTML = `<li class="empty-state">${error.message}</li>`;
-    }
-  }
-}
-
-async function crearLectura(event) {
-  event.preventDefault();
-
-  if (!usuarioSelect.value || !promptSelect.value) {
-    await cargarCatalogos();
-  }
-
-  const formData = new FormData(lecturaForm);
-
-  const data = {
-    usuario_id: formData.get('usuario_id') || usuarioSelect.value,
-    prompt_usado_id: formData.get('prompt_usado_id') || promptSelect.value,
-    respuesta: formData.get('respuesta'),
-    analisis: formData.get('analisis'),
-    metadata: (() => {
-      const raw = String(formData.get('metadata') || '').trim();
-      try {
-        return raw ? JSON.parse(raw) : {};
-      } catch {
-        return { fuente: 'web', raw };
-      }
-    })(),
-    resultado: formData.get('resultado'),
-  };
-
-  if (!data.usuario_id || !data.prompt_usado_id || !data.respuesta || !data.analisis || !data.resultado) {
-    formMessage.textContent = 'Completa todos los campos obligatorios.';
-    formMessage.className = 'form-message error';
-    return;
-  }
-
-  try {
-    formMessage.textContent = 'Guardando lectura...';
-    formMessage.className = 'form-message';
-
-    const res = await fetch('/api/v1/lecturasIA', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': API_KEY,
-      },
-      body: JSON.stringify(data),
-    });
-
-    const body = await res.json().catch(() => ({}));
-
-    if (!res.ok) {
-      throw new Error(body.error || 'No se pudo guardar la lectura');
-    }
-
-    formMessage.textContent = 'Lectura creada correctamente.';
-    formMessage.className = 'form-message success';
-    lecturaForm.reset();
-    const metadataField = document.getElementById('metadata');
-    if (metadataField) metadataField.value = '{"fuente":"web"}';
-    await cargarLecturas();
-  } catch (error) {
-    formMessage.textContent = error.message;
-    formMessage.className = 'form-message error';
-  }
-}
-
-btnLecturas?.addEventListener('click', cargarLecturas);
-refreshLecturas?.addEventListener('click', cargarLecturas);
-lecturaForm?.addEventListener('submit', crearLectura);
-document.getElementById('registroForm')?.addEventListener('submit', (event) => enviarCuenta(event, 'registro'));
-document.getElementById('loginForm')?.addEventListener('submit', (event) => enviarCuenta(event, 'login'));
-
-window.cargarCatalogos = cargarCatalogos;
-
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', async () => {
-    await cargarCatalogos();
-    cargarLecturas();
-  });
-} else {
-  cargarCatalogos();
-  cargarLecturas();
-}
+async function loadReadings() { const status = $('#dashboardStatus'); const list = $('#readings'); status.textContent = 'Cargando lecturas...'; try { const response = await fetch('/api/v1/lecturasIA'); if (!response.ok) throw new Error('No se pudieron cargar las lecturas.'); const data = await response.json(); status.textContent = data.length ? `${data.length} lectura(s) registrada(s).` : 'Aún no hay lecturas registradas.'; list.innerHTML = data.slice(0, 5).map((item) => `<li class="reading"><strong>${item.resultado || 'Sin resultado'}</strong><div class="reading-meta">${item.analisis || 'Sin análisis'}</div></li>`).join(''); } catch (requestError) { status.textContent = requestError.message; list.innerHTML = ''; } }
+const activeSession = JSON.parse(localStorage.getItem(sessionKey) || 'null');
+if (activeSession) dashboard(activeSession); else if (location.hash === '#register') switchView('register');
