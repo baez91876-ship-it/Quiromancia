@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Quiromancia API</title>
+    <meta
+      name="description"
+      content="Panel de la Quiromancia API para crear, consultar y administrar lecturas numerológicas y prompts."
+    />
+    <meta name="robots" content="index, follow" />
+    <meta name="theme-color" content="#120d1d" />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <style>
+      :root {
+        --bg-1: #0f1226;
+        --bg-2: #171d35;
+        --panel: rgba(19, 24, 41, 0.82);
+        --panel-strong: rgba(28, 33, 57, 0.96);
+        --panel-soft: rgba(255, 255, 255, 0.04);
+        --primary: #f5c451;
+        --primary-strong: #d9a226;
+        --accent: #7c8cff;
+        --text: #eef3ff;
+        --muted: #c3ccea;
+        --success: #7ce8b2;
+        --danger: #ff7a7a;
+        --border: rgba(255, 255, 255, 0.1);
+        --field: rgba(10, 14, 26, 0.68);
+        --shadow: rgba(2, 6, 23, 0.42);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        padding: 32px 18px;
+        background: linear-gradient(135deg, var(--bg-1) 0%, var(--bg-2) 50%, #0d1324 100%);
+        color: var(--text);
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        display: grid;
+        place-items: center;
+      }
+
+      button,
+      input,
+      select,
+      textarea {
+        font: inherit;
+      }
+
+      .app-shell {
+        width: min(1024px, 100%);
+        background: rgba(17, 20, 31, 0.82);
+        border: 1px solid var(--border);
+        border-radius: 28px;
+        box-shadow: 0 28px 72px var(--shadow);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        padding: 28px;
+      }
+
+      .topbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 18px;
+      }
+
+      .eyebrow {
+        display: inline-block;
+        margin-bottom: 8px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--primary);
+        font-size: 0.7rem;
+        font-weight: 700;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(2.1rem, 4vw, 3.2rem);
+        letter-spacing: -0.04em;
+        color: var(--text);
+      }
+
+      h2 {
+        margin: 0;
+        font-size: 1.35rem;
+        letter-spacing: -0.03em;
+      }
+
+      .intro {
+        margin: 14px 0 0;
+        max-width: 760px;
+        color: var(--muted);
+        line-height: 1.7;
+        font-size: 1rem;
+      }
+
+      .badges {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 22px;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.7rem 1rem;
+        border-radius: 999px;
+        background: rgba(124, 140, 255, 0.12);
+        border: 1px solid rgba(124, 140, 255, 0.35);
+        color: var(--text);
+        font-weight: 600;
+        font-size: 0.9rem;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+        margin: 28px 0;
+      }
+
+      .button {
+        appearance: none;
+        border: 1px solid transparent;
+        border-radius: 12px;
+        padding: 0.9rem 1.25rem;
+        font-weight: 700;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: transform 0.18s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+      }
+
+      .button:hover {
+        transform: translateY(-1px);
+        opacity: 0.98;
+      }
+
+      .button.primary {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-strong) 100%);
+        color: #131722;
+        box-shadow: 0 10px 24px rgba(245, 196, 81, 0.28);
+      }
+
+      .button.secondary {
+        background: rgba(255, 255, 255, 0.02);
+        border-color: rgba(245, 196, 81, 0.42);
+        color: var(--text);
+      }
+
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 20px;
+        margin-top: 24px;
+      }
+
+      .section-head {
+        margin-bottom: 18px;
+      }
+
+      .lectura-form {
+        display: grid;
+        gap: 18px;
+      }
+
+      .field-row {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+      }
+
+      .field-row.single {
+        grid-template-columns: 1fr;
+      }
+
+      label {
+        display: grid;
+        gap: 8px;
+        color: var(--muted);
+      }
+
+      label span {
+        font-weight: 600;
+      }
+
+      input,
+      select,
+      textarea {
+        width: 100%;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        background: var(--field);
+        color: var(--text);
+        padding: 0.9rem 1rem;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      input:hover,
+      select:hover,
+      textarea:hover {
+        border-color: rgba(124, 140, 255, 0.45);
+      }
+
+      input:focus,
+      select:focus,
+      textarea:focus {
+        outline: none;
+        border-color: rgba(124, 140, 255, 0.75);
+        box-shadow: 0 0 0 3px rgba(124, 140, 255, 0.15);
+      }
+
+      textarea {
+        min-height: 110px;
+        resize: vertical;
+      }
+
+      .form-actions {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        flex-wrap: wrap;
+      }
+
+      .form-message {
+        min-height: 20px;
+        color: var(--muted);
+        font-weight: 600;
+      }
+
+      .form-message.success {
+        color: var(--success);
+      }
+
+      .form-message.error {
+        color: var(--danger);
+      }
+
+      .status {
+        color: var(--muted);
+        margin-bottom: 14px;
+      }
+
+      .lecturas-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 12px;
+      }
+
+      .lectura-item {
+        background: var(--panel-soft);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 14px;
+        padding: 14px 16px;
+      }
+
+      .lectura-item strong {
+        display: block;
+        color: var(--primary);
+        margin-bottom: 5px;
+      }
+
+      .lectura-meta {
+        color: var(--muted);
+        font-size: 0.88rem;
+        line-height: 1.6;
+      }
+
+      .empty-state {
+        color: var(--muted);
+        padding: 10px 0;
+      }
+
+      @media (max-width: 700px) {
+        .app-shell {
+          padding: 20px 16px;
+          border-radius: 22px;
+        }
+
+        .topbar {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .field-row {
+          grid-template-columns: 1fr;
+        }
+
+        .actions,
+        .form-actions {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .button {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div>
+          <span class="eyebrow">Dashboard</span>
+          <h1>Quiromancia API</h1>
+        </div>
+        <button id="refreshLecturas" class="button primary" type="button">Actualizar lecturas</button>
+      </header>
+
+      <p class="intro">
+        La aplicación está funcionando y permite consultar usuarios, prompts y lecturas
+        generadas con apoyo de IA.
+      </p>
+
+      <div class="badges" aria-label="Tecnologías del proyecto">
+        <span class="badge">Express</span>
+        <span class="badge">MongoDB</span>
+        <span class="badge">Node.js</span>
+        <span class="badge">REST API</span>
+      </div>
+
+      <div class="actions">
+        <a class="button primary" href="/api/v1/usuarios">Ver usuarios</a>
+        <button id="btnLecturas" class="button secondary" type="button">Ver lecturas</button>
+      </div>
+
+      <section class="panel">
+        <div class="section-head">
+          <h2>Crear usuario</h2>
+        </div>
+
+        <form id="usuarioForm" class="lectura-form">
+          <div class="field-row">
+            <label>
+              <span>Nombre</span>
+              <input id="nombreUsuario" name="nombre" type="text" required />
+            </label>
+
+            <label>
+              <span>Email</span>
+              <input id="emailUsuario" name="email" type="email" required />
+            </label>
+          </div>
+
+          <div class="field-row">
+            <label>
+              <span>Teléfono</span>
+              <input id="telefonoUsuario" name="telefono" type="tel" />
+            </label>
+
+            <label>
+              <span>Género</span>
+              <select id="generoUsuario" name="genero">
+                <option value="Otro">Otro</option>
+                <option value="M">Masculino</option>
+                <option value="F">Femenino</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="field-row">
+            <label>
+              <span>Fecha de nacimiento</span>
+              <input id="fechaNacimientoUsuario" name="fechaNacimiento" type="date" />
+            </label>
+
+            <label>
+              <span>Contraseña</span>
+              <input id="passwordUsuario" name="password" type="password" required />
+            </label>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="button primary">Guardar usuario</button>
+            <span id="usuarioFormMessage" class="form-message" aria-live="polite"></span>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel">
+        <div class="section-head">
+          <h2>Crear lectura</h2>
+        </div>
+
+        <form id="lecturaForm" class="lectura-form">
+          <div class="field-row">
+            <label>
+              <span>Usuario</span>
+              <select id="usuarioId" name="usuario_id" required></select>
+            </label>
+
+            <label>
+              <span>Prompt</span>
+              <select id="promptId" name="prompt_usado_id" required></select>
+            </label>
+          </div>
+
+          <div class="field-row single">
+            <label>
+              <span>Respuesta</span>
+              <textarea id="respuesta" name="respuesta" rows="3" required></textarea>
+            </label>
+          </div>
+
+          <div class="field-row single">
+            <label>
+              <span>Análisis</span>
+              <textarea id="analisis" name="analisis" rows="4" required></textarea>
+            </label>
+          </div>
+
+          <div class="field-row single">
+            <label>
+              <span>Metadata (JSON)</span>
+              <textarea id="metadata" name="metadata" rows="3"></textarea>
+            </label>
+          </div>
+
+          <div class="field-row single">
+            <label>
+              <span>Resultado</span>
+              <input id="resultado" name="resultado" type="text" required />
+            </label>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="button primary">Guardar lectura</button>
+            <span id="formMessage" class="form-message" aria-live="polite"></span>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel panel-alt">
+        <div class="section-head">
+          <h2>Lecturas recientes</h2>
+        </div>
+        <div id="lecturasStatus" class="status">Cargando lecturas...</div>
+        <ul id="lecturasList" class="lecturas-list"></ul>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
