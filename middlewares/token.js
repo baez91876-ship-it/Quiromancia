@@ -22,21 +22,17 @@ export const generarJWT = (uid) => {
 export const login = async (req, res) => {
     const { email, password } = req.body;
 
-    if (!email || !password) {
-        return res.status(400).json({ msg: "El email y la contraseña son obligatorios" });
-    }
-
     try {
         const usuario = await Usuario.findOne({ email }).select("+password");
 
         if (!usuario) {
-            return res.status(400).json({ msg: "Usuario / Password no son correctos" });
+            return res.status(401).json({ error: "Email o contraseña incorrectos" });
         }
 
         const validPassword = bcryptjs.compareSync(password, usuario.password);
 
         if (!validPassword) {
-            return res.status(400).json({ msg: "Usuario / Password no son correctos" });
+            return res.status(401).json({ error: "Email o contraseña incorrectos" });
         }
 
         const token = await generarJWT(usuario._id.toString());
@@ -49,6 +45,6 @@ export const login = async (req, res) => {
         });
     } catch (error) {
         console.error(error);
-        return res.status(500).json({ msg: "No se pudo iniciar sesión" });
+        return res.status(500).json({ error: "No se pudo iniciar sesión" });
     }
 };

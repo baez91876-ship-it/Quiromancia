@@ -16,3 +16,8 @@ export const usuarioUpdateValidator = [
     body("genero").optional().isIn(["M", "F", "Otro"]),
     body("telefono").optional().trim().notEmpty(),
 ];
+
+export const loginValidator = [
+    body("email", "El email es obligatorio").isEmail().normalizeEmail(),
+    body("password", "La contraseña es obligatoria").notEmpty(),
+];

@@ -172,6 +172,12 @@
         margin-top: 24px;
       }
 
+      .auth-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+      }
+
       .section-head {
         margin-bottom: 18px;
       }
@@ -305,6 +311,10 @@
           grid-template-columns: 1fr;
         }
 
+        .auth-grid {
+          grid-template-columns: 1fr;
+        }
+
         .actions,
         .form-actions {
           flex-direction: column;
@@ -343,6 +353,31 @@
         <a class="button primary" href="/api/v1/usuarios">Ver usuarios</a>
         <button id="btnLecturas" class="button secondary" type="button">Ver lecturas</button>
       </div>
+
+      <section class="panel">
+        <div class="section-head">
+          <h2>Cuenta</h2>
+        </div>
+        <div class="auth-grid">
+          <form id="registroForm" class="lectura-form">
+            <h3>Registrarse</h3>
+            <label><span>Nombre</span><input name="nombre" type="text" required /></label>
+            <label><span>Email</span><input name="email" type="email" required /></label>
+            <label><span>Contraseña</span><input name="password" type="password" minlength="6" required /></label>
+            <label><span>Teléfono</span><input name="telefono" type="tel" required /></label>
+            <label><span>Fecha de nacimiento</span><input name="fechaNacimiento" type="date" required /></label>
+            <label><span>Género</span><select name="genero"><option value="Otro">Otro</option><option value="M">Masculino</option><option value="F">Femenino</option></select></label>
+            <div class="form-actions"><button type="submit" class="button primary">Crear cuenta</button><span id="registroMessage" class="form-message" aria-live="polite"></span></div>
+          </form>
+
+          <form id="loginForm" class="lectura-form">
+            <h3>Iniciar sesión</h3>
+            <label><span>Email</span><input name="email" type="email" required /></label>
+            <label><span>Contraseña</span><input name="password" type="password" required /></label>
+            <div class="form-actions"><button type="submit" class="button secondary">Iniciar sesión</button><span id="loginMessage" class="form-message" aria-live="polite"></span></div>
+          </form>
+        </div>
+      </section>
 
       <section class="panel">
         <div class="section-head">

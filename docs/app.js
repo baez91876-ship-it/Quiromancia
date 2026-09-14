@@ -8,6 +8,40 @@ const promptSelect = document.getElementById('promptId');
 const formMessage = document.getElementById('formMessage');
 const API_KEY = 'secret123';
 
+async function enviarCuenta(event, tipo) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const message = document.getElementById(tipo === 'login' ? 'loginMessage' : 'registroMessage');
+  const payload = Object.fromEntries(new FormData(form).entries());
+  if (tipo === 'registro') payload.genero = payload.genero || 'Otro';
+
+  message.textContent = tipo === 'login' ? 'Iniciando sesión...' : 'Creando cuenta...';
+  message.className = 'form-message';
+
+  try {
+    const response = await fetch(`/api/v1/usuarios/${tipo === 'login' ? 'login' : ''}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(body.error || body.msg || body.errors?.[0]?.msg || 'No se pudo completar la operación');
+
+    if (tipo === 'login') {
+      localStorage.setItem('token', body.token);
+      localStorage.setItem('usuario', JSON.stringify(body.usuario));
+      message.textContent = `Sesión iniciada. Bienvenido, ${body.usuario.nombre}.`;
+    } else {
+      message.textContent = 'Cuenta creada correctamente. Ya puedes iniciar sesión.';
+      form.reset();
+    }
+    message.className = 'form-message success';
+  } catch (error) {
+    message.textContent = error.message;
+    message.className = 'form-message error';
+  }
+}
+
 async function obtenerUsuarios() {
   const res = await fetch('/api/v1/usuarios');
 
@@ -253,6 +287,8 @@ btnLecturas?.addEventListener('click', cargarLecturas);
 refreshLecturas?.addEventListener('click', cargarLecturas);
 document.getElementById('usuarioForm')?.addEventListener('submit', crearUsuario);
 lecturaForm?.addEventListener('submit', crearLectura);
+document.getElementById('registroForm')?.addEventListener('submit', (event) => enviarCuenta(event, 'registro'));
+document.getElementById('loginForm')?.addEventListener('submit', (event) => enviarCuenta(event, 'login'));
 
 window.cargarCatalogos = cargarCatalogos;
 
