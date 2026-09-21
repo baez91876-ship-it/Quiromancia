@@ -2,53 +2,6 @@ import { LecturaIA } from "../models/lecturasIA.model.js";
 import { PromptConfig } from "../models/promptsConfig.model.js";
 import { MatrizNumerologica } from "../models/matricesNumerologicas.model.js";
 import { BitacoraTransaccion } from "../models/bitacoraTransacciones.model.js";
-import { Usuario } from "../models/usuarios.model.js";
-import { generarInterpretacion } from "../src/services/gemini.service.js";
-
-export const generarLecturaIA = async (req, res) => {
-    try {
-        const { usuario_id, prompt_usado_id, metadata = {} } = req.body;
-        const [usuario, prompt, matriz] = await Promise.all([
-            Usuario.findById(usuario_id).select("nombre fechaNacimiento"),
-            PromptConfig.findById(prompt_usado_id),
-            MatrizNumerologica.findOne({ usuario_id }),
-        ]);
-
-        if (!prompt || !prompt.activo) {
-            return res.status(400).json({ error: "El prompt no existe o no está activo" });
-        }
-        if (!matriz) {
-            return res.status(400).json({ error: "No existe una matriz numerológica para este usuario" });
-        }
-
-        const respuesta = await generarInterpretacion({
-            prompt: prompt.prompt,
-            usuario,
-            matriz,
-            metadata,
-        });
-        const lectura = await LecturaIA.create({
-            usuario_id,
-            prompt_usado_id,
-            respuesta,
-            analisis: "Interpretación generada por Gemini con ingeniería de prompts numerológica",
-            metadata,
-            resultado: "generado",
-        });
-        const bitacora = await BitacoraTransaccion.create({
-            usuario_id,
-            lectura_id: lectura._id,
-            tipo: "lectura_gemini",
-            monto: 0,
-            estado: "completado",
-            detalles: "Lectura generada por Gemini con prompt activo",
-        });
-
-        return res.status(201).json({ lectura, bitacora });
-    } catch (error) {
-        return res.status(502).json({ error: error.message });
-    }
-};
 
 export const createLecturaIA = async (req, res) => {
     try {

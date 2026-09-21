@@ -25,12 +25,6 @@ export const lecturaCreateValidator = [
     body("resultado", "El resultado es obligatorio").notEmpty().trim(),
 ];
 
-export const lecturaGenerarValidator = [
-    body("usuario_id", "El usuario_id es obligatorio").notEmpty().isMongoId().bail().custom(usuarioExists),
-    body("prompt_usado_id", "El prompt_usado_id es obligatorio").notEmpty().isMongoId().bail().custom(promptExists),
-    body("metadata").optional().isObject(),
-];
-
 export const lecturaUpdateValidator = [
     body("usuario_id").optional().isMongoId().bail().custom(usuarioExists),
     body("prompt_usado_id").optional().isMongoId().bail().custom(promptExists),
