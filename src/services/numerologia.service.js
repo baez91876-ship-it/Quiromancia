@@ -1,46 +1,67 @@
-const MASTER_NUMBERS = new Set([11, 22, 33]);
+const reducirNumero = (valor) => {
+  let total = Number(valor) || 0;
 
-export const reducirNumero = (value) => {
-    const digits = String(value).replace(/\D/g, "");
-    if (!digits) {
-        throw new Error("El valor debe contener al menos un número");
-    }
+  while (total > 9) {
+    total = Array.from(String(total), Number).reduce((sum, digit) => sum + digit, 0);
+  }
 
-    let number = Number(digits);
-    while (number > 9 && !MASTER_NUMBERS.has(number)) {
-        number = String(number)
-            .split("")
-            .reduce((total, digit) => total + Number(digit), 0);
-    }
-    return number;
+  return total || 0;
 };
 
-export const sumarFechaNacimiento = (fechaNacimiento) => {
-    const normalized = new Date(fechaNacimiento);
-    if (Number.isNaN(normalized.getTime())) {
-        throw new Error("La fecha de nacimiento no es válida");
-    }
+const calcularNumeroNombre = (nombre) => {
+  const letras = (nombre || '').toUpperCase().replace(/[^A-Z]/g, '');
 
-    const isoDate = normalized.toISOString().slice(0, 10).replace(/-/g, "");
-    return reducirNumero(isoDate);
+  if (!letras) {
+    return 0;
+  }
+
+  const valor = [...letras].reduce((sum, letra) => {
+    const codigo = letra.charCodeAt(0) - 64;
+    return sum + codigo;
+  }, 0);
+
+  return reducirNumero(valor);
 };
 
-export const sumarNombre = (nombre) => {
-    const normalized = String(nombre)
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .toLowerCase()
-        .replace(/[^a-z]/g, "");
+const calcularNumeroDestino = (fechaNacimiento) => {
+  const fecha = new Date(fechaNacimiento);
 
-    if (!normalized) {
-        throw new Error("El nombre debe contener letras");
-    }
+  if (Number.isNaN(fecha.getTime())) {
+    return 0;
+  }
 
-    const total = [...normalized].reduce((sum, letter) => sum + letter.charCodeAt(0) - 96, 0);
-    return reducirNumero(total);
+  const valor = [
+    fecha.getDate(),
+    fecha.getMonth() + 1,
+    fecha.getFullYear(),
+  ].join('');
+
+  return reducirNumero(valor);
 };
 
-export const calcularPerfilNumerologico = ({ nombre, fechaNacimiento }) => ({
-    numeroVida: sumarFechaNacimiento(fechaNacimiento),
-    numeroDestino: sumarNombre(nombre),
-});
+export const calcularPerfilNumerologico = ({ nombre, fechaNacimiento }) => {
+  const numeroVida = calcularNumeroNombre(nombre);
+  const numeroDestino = calcularNumeroDestino(fechaNacimiento);
+
+  const descripcion = [
+    'Este perfil refleja la energía personal y el propósito asociado al nombre y la fecha de nacimiento.',
+    `Número de vida: ${numeroVida || 'No disponible'}.`,
+    `Número de destino: ${numeroDestino || 'No disponible'}.`,
+  ].join(' ');
+
+  return {
+    numeroVida: numeroVida || 0,
+    numeroDestino: numeroDestino || 0,
+    descripcion,
+    resultado: {
+      nombre,
+      fechaNacimiento,
+      numeroVida: numeroVida || 0,
+      numeroDestino: numeroDestino || 0,
+    },
+  };
+};
+
+export default {
+  calcularPerfilNumerologico,
+};
