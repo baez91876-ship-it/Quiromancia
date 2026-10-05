@@ -10,6 +10,7 @@ import { manejarErrores } from './middlewares/errores.js';
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 const HOST = '0.0.0.0';
+const LOCAL_URL = `http://localhost:${PORT}`;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -36,12 +37,12 @@ const start = async () => {
   try {
     await cnxmongo();
     app.listen(PORT, HOST, () => {
-      console.log(`Servidor iniciado en http://${HOST}:${PORT}`);
+      console.log(`Servidor iniciado en ${LOCAL_URL}`);
     });
   } catch (error) {
     console.error('No se pudo iniciar el servidor:', error.message);
     app.listen(PORT, HOST, () => {
-      console.log(`Servidor iniciado en modo local en http://${HOST}:${PORT}`);
+      console.log(`Servidor iniciado en modo local en ${LOCAL_URL}`);
     });
   }
 };

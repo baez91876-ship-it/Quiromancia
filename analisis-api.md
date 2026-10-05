@@ -332,4 +332,4 @@ Una colección puede cambiar entre el `countDocuments()` y el `find().skip().lim
 | Completitud del contenido | 18/20 | Se cubren los retos y la actividad final, pero algunas observaciones dependen de una base MongoDB con datos y quedaron pendientes de medición. |
 | Precisión y utilidad | 17/20 | Las respuestas se contrastan con rutas y comportamiento del código actual; no se presentan como comprobados los experimentos no ejecutados. |
 | Formato y presentación | 18/20 | Las citas, tablas y bloques de código facilitan la consulta, aunque la extensión del documento lo hace denso. |
-| **Total** | **90/100** | **Buen nivel de evidencia y correspondencia con el repositorio; faltan algunas mediciones de integración con MongoDB para alcanzar el máximo.** |
+| **Total** | **90/100** | 
