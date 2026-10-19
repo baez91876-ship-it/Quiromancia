@@ -11,11 +11,11 @@
   "name": "casino",
   "version": "1.0.0",
   "description": "",
-  "main": "app.js",
+  "main": "backend/app.js",
   "scripts": {
-    "start": "node app.js",
-    "dev": "nodemon app.js",
-    "test": "node --test"
+    "start": "node backend/app.js",
+    "dev": "nodemon backend/app.js",
+    "build:frontend": "node scripts/build-frontend.js"
   },
   "type": "module",
   "engines": {

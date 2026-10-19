@@ -50,7 +50,7 @@ export const createApp = () => {
   app.use(createCorsMiddleware());
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
-  app.use(express.static(path.join(__dirname, 'public')));
+  app.use(express.static(path.resolve(__dirname, '../frontend')));
   app.use('/api/v1', auditarPeticion);
   app.use('/api/v1', apiRouter);
 
@@ -68,27 +68,34 @@ export const createApp = () => {
   return app;
 };
 
-export const start = async (app = createApp()) => {
+export const start = (app = createApp()) => {
   const port = Number(process.env.PORT) || 3000;
   const host = '0.0.0.0';
   const localUrl = `http://localhost:${port}`;
   if (!geminiConfigured) {
     console.warn('GEMINI_API_KEY no está configurada; las solicitudes de generación responderán 503.');
   }
-  try {
-    const connected = await cnxmongo();
-    if (connected) {
-      await asegurarPromptPredeterminado();
-    }
-    app.listen(port, host, () => {
-      console.log(`Servidor iniciado en ${localUrl}`);
-    });
-  } catch (error) {
-    console.error('No se pudo iniciar el servidor:', error.message);
-    app.listen(port, host, () => {
-      console.log(`Servidor iniciado en modo local en ${localUrl}`);
-    });
-  }
+  const server = app.listen(port, host, () => {
+    console.log(`Servidor iniciado en ${localUrl}`);
+    void cnxmongo()
+      .then(async (connected) => {
+        if (!connected) {
+          console.warn('MongoDB no está conectado; revisa MONGO_URI, las credenciales y el acceso de red de Atlas.');
+          return;
+        }
+
+        console.log('Conexión a MongoDB establecida exitosamente.');
+        try {
+          await asegurarPromptPredeterminado();
+        } catch (error) {
+          console.error('No se pudo preparar el prompt predeterminado:', error.message);
+        }
+      })
+      .catch((error) => {
+        console.error('No se pudo conectar a MongoDB:', error.message);
+      });
+  });
+  return server;
 };
 
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
