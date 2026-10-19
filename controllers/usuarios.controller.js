@@ -1,24 +1,42 @@
 import bcryptjs from 'bcryptjs';
 import { Usuario } from '../models/usuarios.model.js';
 import { LecturaIA } from '../models/lecturasIA.model.js';
-import { calcularPerfilNumerologico } from '../src/services/numerologia.service.js';
+import { MatrizNumerologica } from '../models/matricesNumerologicas.model.js';
+import { calcularPerfilNumerologico, asegurarMatrizNumerologica } from '../src/services/numerologia.service.js';
 
 export const createUsuario = async (req, res) => {
+    let usuario;
     try {
         const { nombre, email, fechaNacimiento, genero, telefono, password } = req.body;
 
         const salt = bcryptjs.genSaltSync();
         const hashedPassword = bcryptjs.hashSync(password, salt);
 
-        const usuario = new Usuario({ nombre, email, fechaNacimiento, genero, telefono, password: hashedPassword });
+        usuario = new Usuario({ nombre, email, fechaNacimiento, genero, telefono, password: hashedPassword });
         await usuario.save();
+        await asegurarMatrizNumerologica(usuario);
 
         const usuarioSinPassword = usuario.toObject();
         delete usuarioSinPassword.password;
 
         return res.status(201).json(usuarioSinPassword);
     } catch (error) {
-        return res.status(400).json({ error: error.message });
+        if (usuario?._id) {
+            try {
+                await MatrizNumerologica.deleteMany({ usuario_id: usuario._id });
+                await Usuario.findByIdAndDelete(usuario._id);
+            } catch (rollbackError) {
+                console.error('No se pudo revertir el registro incompleto:', rollbackError);
+            }
+        }
+        console.error('No se pudo crear el usuario y su matriz:', error);
+        return res.status(error.name === 'ValidationError' || error.code === 11000 ? 400 : 500).json({
+            error: error.name === 'ValidationError'
+                ? 'Los datos del usuario no son válidos'
+                : error.code === 11000
+                    ? 'Ya existe una cuenta con ese correo'
+                    : 'No se pudo crear la cuenta',
+        });
     }
 };
 

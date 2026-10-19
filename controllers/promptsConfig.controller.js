@@ -13,7 +13,9 @@ export const createPromptConfig = async (req, res) => {
 
 export const getPromptsConfig = async (req, res) => {
     try {
-        const prompts = await PromptConfig.find();
+        const prompts = await PromptConfig.find({ activo: true })
+            .select("nombre descripcion categoria tipo_lectura")
+            .sort({ nombre: 1 });
         return res.status(200).json(prompts);
     } catch (error) {
         return res.status(500).json({ error: error.message });
@@ -23,7 +25,8 @@ export const getPromptsConfig = async (req, res) => {
 export const getPromptConfigById = async (req, res) => {
     try {
         const { id } = req.params;
-        const promptConfig = await PromptConfig.findById(id);
+        const promptConfig = await PromptConfig.findById(id)
+            .select("nombre descripcion activo categoria tipo_lectura creadoPor createdAt updatedAt");
         if (!promptConfig) {
             return res.status(404).json({ error: "PromptConfig no encontrado" });
         }

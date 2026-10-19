@@ -1,3 +1,5 @@
+import { MatrizNumerologica } from "../../models/matricesNumerologicas.model.js";
+
 const reducirNumero = (valor) => {
   let total = Number(valor) || 0;
 
@@ -62,6 +64,20 @@ export const calcularPerfilNumerologico = ({ nombre, fechaNacimiento }) => {
   };
 };
 
-export default {
-  calcularPerfilNumerologico,
+export const asegurarMatrizNumerologica = async (usuario) => {
+  const matrizExistente = await MatrizNumerologica.findOne({ usuario_id: usuario._id });
+  if (matrizExistente) {
+    return matrizExistente;
+  }
+
+  const perfil = calcularPerfilNumerologico({
+    nombre: usuario.nombre,
+    fechaNacimiento: usuario.fechaNacimiento,
+  });
+
+  return MatrizNumerologica.create({
+    usuario_id: usuario._id,
+    ...perfil,
+    resultado: JSON.stringify(perfil.resultado),
+  });
 };

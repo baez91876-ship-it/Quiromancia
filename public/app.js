@@ -1,48 +1,357 @@
 const $ = (selector) => document.querySelector(selector);
-const usersKey = 'quiromancia_users';
-const sessionKey = 'quiromancia_session';
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const sessionKey = "quiromancia_session";
+const readingsCache = [];
+let activeSession = readSession();
 let toastTimer;
-let readingsCache = [];
-const users = () => JSON.parse(localStorage.getItem(usersKey) || '[]');
-const saveUsers = (value) => localStorage.setItem(usersKey, JSON.stringify(value));
-const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-const showToast = (message, type = 'success') => { clearTimeout(toastTimer); const toast = $('#toast'); toast.textContent = message; toast.className = `toast ${type} show`; toastTimer = setTimeout(() => { toast.className = 'toast'; }, 3500); };
-const error = (id, message = '') => { const input = $(`#${id}`); const output = $(`[data-error="${id}"]`); input?.classList.toggle('invalid', Boolean(message)); if (output) output.textContent = message; };
-const eye = (crossed = false) => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-5.5 9.5-5.5 9.5 5.5 9.5 5.5-3.5 5.5-9.5 5.5S2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.4"/>${crossed ? '<path d="m4 4 16 16"/>' : ''}</svg>`;
 
-function switchView(name) { $('#loginPanel').classList.toggle('active', name === 'login'); $('#registerPanel').classList.toggle('active', name === 'register'); window.location.hash = name; }
-function dashboard(user) { $('#authView').classList.remove('active'); $('#dashboardView').classList.add('active'); $('#welcomeName').textContent = user.name; loadReadings(); }
-function showAuth() { $('#dashboardView').classList.remove('active'); $('#authView').classList.add('active'); switchView('login'); }
-function strength() { const value = $('#registerPassword').value; const score = [value.length >= 8, /\d/.test(value), /[^A-Za-z0-9]/.test(value), value.length >= 12].filter(Boolean).length; $('#strengthFill').style.width = `${score * 25}%`; $('#strengthFill').style.background = score <= 1 ? 'var(--danger)' : score === 2 ? 'var(--gold)' : 'var(--success)'; $('#strengthText').textContent = ['Sin contraseña', 'Débil', 'Media', 'Fuerte', 'Muy fuerte'][score]; validateRegister(false); }
-function validateLogin(show = true) { const email = $('#loginEmail').value.trim(); const password = $('#loginPassword').value; const emailError = email && !emailPattern.test(email) ? 'Escribe un correo válido.' : ''; const passwordError = password && password.length < 8 ? 'Usa al menos 8 caracteres.' : ''; if (show) { error('loginEmail', emailError); error('loginPassword', passwordError); } return Boolean(email && password && !emailError && !passwordError); }
-function validateRegister(show = true) { const name = $('#registerName').value.trim(); const email = $('#registerEmail').value.trim(); const password = $('#registerPassword').value; const confirmation = $('#confirmPassword').value; const errors = { registerName: name ? '' : 'Escribe tu nombre completo.', registerEmail: !email ? 'El correo es obligatorio.' : !emailPattern.test(email) ? 'Escribe un correo válido.' : '', registerPassword: password && password.length >= 8 && /\d/.test(password) && /[^A-Za-z0-9]/.test(password) ? '' : 'Usa 8 caracteres, un número y un símbolo.', confirmPassword: confirmation && confirmation === password ? '' : 'Las contraseñas no coinciden.', termsAccepted: $('#termsAccepted').checked ? '' : 'Debes aceptar los términos.' }; if (show) Object.entries(errors).forEach(([id, message]) => error(id, message)); const valid = name && email && password && confirmation && !Object.values(errors).some(Boolean); $('#registerSubmit').disabled = !valid; return valid; }
-function loading(button, active, label) { button.classList.toggle('loading', active); button.disabled = active; button.querySelector('.label').textContent = active ? 'Procesando...' : label; }
-
-async function loadPrompts() {
-	const response = await fetch('/api/v1/promptsConfig');
-	if (!response.ok) throw new Error('No se pudieron cargar los prompts.');
-	return response.json();
+function readSession() {
+    for (const storage of [sessionStorage, localStorage]) {
+        try {
+            const session = JSON.parse(storage.getItem(sessionKey) || "null");
+            if (session?.token && session.usuario?._id) return { ...session, storage };
+            if (session !== null) storage.removeItem(sessionKey);
+        } catch {
+            storage.removeItem(sessionKey);
+        }
+    }
+    return null;
 }
 
-document.querySelectorAll('[data-switch]').forEach((button) => button.addEventListener('click', () => switchView(button.dataset.switch)));
-document.querySelectorAll('.eye').forEach((button) => { button.innerHTML = eye(); button.addEventListener('click', () => { const input = $(`#${button.dataset.eye}`); const visible = input.type === 'password'; input.type = visible ? 'text' : 'password'; button.innerHTML = eye(visible); button.setAttribute('aria-label', visible ? 'Ocultar contraseña' : 'Mostrar contraseña'); }); });
-['loginEmail', 'loginPassword'].forEach((id) => $(`#${id}`).addEventListener('input', () => validateLogin(true)));
-['registerName', 'registerEmail', 'confirmPassword'].forEach((id) => $(`#${id}`).addEventListener('input', () => validateRegister(true)));
-$('#registerPassword').addEventListener('input', strength);
-$('#termsAccepted').addEventListener('change', () => validateRegister(true));
+function saveSession(session, remember) {
+    clearSession();
+    const storage = remember ? localStorage : sessionStorage;
+    storage.setItem(sessionKey, JSON.stringify({ token: session.token, usuario: session.usuario }));
+    activeSession = { token: session.token, usuario: session.usuario, storage };
+}
 
-$('#loginForm').addEventListener('submit', async (event) => { event.preventDefault(); if (!validateLogin(true)) return; const button = event.currentTarget.querySelector('.primary'); const email = $('#loginEmail').value.trim().toLowerCase(); loading(button, true, 'Iniciar sesión'); await delay(1000); const user = users().find((item) => item.email === email && item.password === $('#loginPassword').value); loading(button, false, 'Iniciar sesión'); if (!user) { showToast('Correo o contraseña incorrectos.', 'error'); return; } localStorage.setItem(sessionKey, JSON.stringify(user)); showToast('Sesión iniciada correctamente.'); dashboard(user); });
-$('#registerForm').addEventListener('submit', async (event) => { event.preventDefault(); if (!validateRegister(true)) return; const email = $('#registerEmail').value.trim().toLowerCase(); if (users().some((item) => item.email === email)) { error('registerEmail', 'Este correo ya está registrado.'); showToast('Ese correo ya está registrado.', 'error'); return; } const button = event.currentTarget.querySelector('.primary'); loading(button, true, 'Crear cuenta'); await delay(1000); const user = { id: crypto.randomUUID?.() || String(Date.now()), name: $('#registerName').value.trim(), email, password: $('#registerPassword').value }; saveUsers([...users(), user]); localStorage.setItem(sessionKey, JSON.stringify(user)); loading(button, false, 'Crear cuenta'); showToast('Cuenta creada correctamente.'); dashboard(user); });
-$('#readingForm').addEventListener('submit', async (event) => { event.preventDefault(); const session = JSON.parse(localStorage.getItem(sessionKey) || 'null'); const button = event.currentTarget.querySelector('.primary'); const responseText = $('#readingResponse').value.trim(); const analysis = $('#readingAnalysis').value.trim(); if (!session || !responseText || !analysis) { showToast('Completa la respuesta y el análisis.', 'error'); return; } loading(button, true, 'Guardar lectura'); try { const prompts = await loadPrompts(); const prompt = prompts.find((item) => item.activo !== false) || prompts[0]; if (!prompt) throw new Error('No hay un prompt disponible para crear la lectura.'); const payload = { usuario_id: session.id, prompt_usado_id: prompt._id, respuesta: responseText, analisis: analysis, metadata: { mano: $('#handSide').value, tipo_lectura: $('#readingType').value, fuente: 'dashboard' }, resultado: $('#readingResult').value }; const response = await fetch('/api/v1/lecturasIA', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': 'secret123' }, body: JSON.stringify(payload) }); const body = await response.json().catch(() => ({})); if (!response.ok) throw new Error(body.error || body.errors?.[0]?.msg || 'No se pudo crear la lectura.'); event.currentTarget.reset(); showToast('Lectura creada correctamente.'); await loadReadings(); } catch (requestError) { showToast(requestError.message, 'error'); } finally { loading(button, false, 'Guardar lectura'); } });
-$('#logoutButton').addEventListener('click', () => { localStorage.removeItem(sessionKey); showAuth(); showToast('Sesión cerrada.'); });
-$('#forgotPassword').addEventListener('click', () => { $('#modalTitle').textContent = 'Recuperar acceso'; $('#modalText').textContent = 'Esta demo no envía correos todavía. En una versión conectada, recibirías un enlace para restablecer tu contraseña.'; $('#modalBg').classList.add('show'); });
-$('#termsLink').addEventListener('click', () => { $('#modalTitle').textContent = 'Términos y privacidad'; $('#modalText').textContent = 'Esta demo guarda las cuentas únicamente en el almacenamiento local de este navegador.'; $('#modalBg').classList.add('show'); });
-$('#closeModal').addEventListener('click', () => $('#modalBg').classList.remove('show'));
-$('#readings').addEventListener('click', (event) => { const button = event.target.closest('[data-reading-index]'); if (button) printReading(Number(button.dataset.readingIndex)); });
+function clearSession() {
+    localStorage.removeItem(sessionKey);
+    sessionStorage.removeItem(sessionKey);
+    activeSession = null;
+}
 
-const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
-function printReading(index) { const item = readingsCache[index]; if (!item) return; const metadata = item.metadata || {}; const printWindow = window.open('', '_blank', 'noopener,noreferrer'); if (!printWindow) { showToast('Permite las ventanas emergentes para imprimir.', 'error'); return; } const date = item.fecha || item.createdAt; printWindow.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Lectura numerológica</title><style>body{margin:0;padding:36px;color:#111;font:16px Georgia,serif}h1{margin:0 0 8px;font-size:28px}h2{margin:24px 0 7px;font-size:16px}p{margin:0;line-height:1.6;white-space:pre-wrap}.date{color:#555;font:12px Arial,sans-serif}.meta{font:14px Arial,sans-serif}</style></head><body><main><h1>Lectura numerológica</h1><p class="date">${escapeHtml(date ? new Date(date).toLocaleString('es-ES') : 'Fecha no disponible')}</p><p class="meta">Resultado: ${escapeHtml(item.resultado || 'Sin resultado')} | Tipo: ${escapeHtml(metadata.tipo_lectura || 'No especificado')} | Mano: ${escapeHtml(metadata.mano || 'No especificada')}</p><h2>Respuesta</h2><p>${escapeHtml(item.respuesta || 'Sin respuesta')}</p><h2>Análisis</h2><p>${escapeHtml(item.analisis || 'Sin análisis')}</p></main><script>window.onload=function(){window.print();window.onafterprint=function(){window.close();};};</script></body></html>`); printWindow.document.close(); }
-async function loadReadings() { const status = $('#dashboardStatus'); const list = $('#readings'); status.textContent = 'Cargando lecturas...'; try { const response = await fetch('/api/v1/lecturasIA'); if (!response.ok) throw new Error('No se pudieron cargar las lecturas.'); const data = await response.json(); readingsCache = data.slice(0, 5); status.textContent = data.length ? `${data.length} lectura(s) registrada(s).` : 'Aún no hay lecturas registradas.'; list.innerHTML = readingsCache.map((item, index) => `<li class="reading"><strong>${escapeHtml(item.resultado || 'Sin resultado')}</strong><div class="reading-meta">${escapeHtml(item.analisis || 'Sin análisis')}</div><div class="reading-actions"><button class="ghost print-reading" type="button" data-reading-index="${index}">Imprimir lectura</button></div></li>`).join(''); } catch (requestError) { readingsCache = []; status.textContent = requestError.message; list.innerHTML = ''; } }
-const activeSession = JSON.parse(localStorage.getItem(sessionKey) || 'null');
-if (activeSession) dashboard(activeSession); else if (location.hash === '#register') switchView('register');
+function showToast(message, type = "success") {
+    clearTimeout(toastTimer);
+    const toast = $("#toast");
+    toast.textContent = message;
+    toast.className = `toast ${type} show`;
+    toastTimer = setTimeout(() => { toast.className = "toast"; }, 3500);
+}
+
+function setFieldError(id, message = "") {
+    const input = $(`#${id}`);
+    const output = $(`[data-error="${id}"]`);
+    input?.classList.toggle("invalid", Boolean(message));
+    if (output) output.textContent = message;
+}
+
+function showAuth(view = "login") {
+    $("#dashboardView").classList.remove("active");
+    $("#authView").classList.add("active");
+    switchView(view);
+}
+
+function switchView(view) {
+    const showRegister = view === "register";
+    $("#loginPanel").classList.toggle("active", !showRegister);
+    $("#registerPanel").classList.toggle("active", showRegister);
+    if (location.hash !== `#${view}`) location.hash = view;
+}
+
+function showDashboard(usuario) {
+    $("#authView").classList.remove("active");
+    $("#dashboardView").classList.add("active");
+    $("#welcomeName").textContent = usuario.nombre;
+    void loadDashboard();
+}
+
+function updatePasswordStrength() {
+    const password = $("#registerPassword").value;
+    const score = [
+        password.length >= 8,
+        /\d/.test(password),
+        /[^A-Za-z0-9]/.test(password),
+        password.length >= 12,
+    ].filter(Boolean).length;
+    $("#strengthFill").style.width = `${score * 25}%`;
+    $("#strengthFill").style.background = score <= 1 ? "var(--danger)" : score === 2 ? "var(--gold)" : "var(--success)";
+    $("#strengthText").textContent = ["Sin contraseña", "Débil", "Media", "Fuerte", "Muy fuerte"][score];
+    validateRegister(false);
+}
+
+function validateLogin(showErrors = true) {
+    const email = $("#loginEmail").value.trim();
+    const password = $("#loginPassword").value;
+    const errors = {
+        loginEmail: email && !emailPattern.test(email) ? "Escribe un correo válido." : "",
+        loginPassword: password ? "" : "La contraseña es obligatoria.",
+    };
+    if (showErrors) Object.entries(errors).forEach(([id, message]) => setFieldError(id, message));
+    return Boolean(email && password && !errors.loginEmail && !errors.loginPassword);
+}
+
+function validateRegister(showErrors = true) {
+    const name = $("#registerName").value.trim();
+    const email = $("#registerEmail").value.trim();
+    const password = $("#registerPassword").value;
+    const confirmation = $("#confirmPassword").value;
+    const errors = {
+        registerName: name ? "" : "Escribe tu nombre completo.",
+        registerEmail: !email ? "El correo es obligatorio." : !emailPattern.test(email) ? "Escribe un correo válido." : "",
+        registerBirthDate: $("#registerBirthDate").value ? "" : "La fecha de nacimiento es obligatoria.",
+        registerPhone: $("#registerPhone").value.trim() ? "" : "El teléfono es obligatorio.",
+        registerPassword: password.length >= 8 && /\d/.test(password) && /[^A-Za-z0-9]/.test(password)
+            ? ""
+            : "Usa 8 caracteres, un número y un símbolo.",
+        confirmPassword: confirmation && confirmation === password ? "" : "Las contraseñas no coinciden.",
+        termsAccepted: $("#termsAccepted").checked ? "" : "Debes aceptar los términos.",
+    };
+    if (showErrors) Object.entries(errors).forEach(([id, message]) => setFieldError(id, message));
+    const valid = name && email && $("#registerBirthDate").value && $("#registerPhone").value.trim()
+        && password && confirmation && Object.values(errors).every((message) => !message);
+    $("#registerSubmit").disabled = !valid;
+    return Boolean(valid);
+}
+
+function setLoading(button, loading, label) {
+    button.classList.toggle("loading", loading);
+    button.disabled = loading;
+    button.querySelector(".label").textContent = loading ? "Procesando..." : label;
+}
+
+async function api(path, { method = "GET", body, authenticated = true } = {}) {
+    const headers = { Accept: "application/json" };
+    if (body !== undefined) headers["Content-Type"] = "application/json";
+    if (authenticated && activeSession?.token) headers.Authorization = `Bearer ${activeSession.token}`;
+
+    const response = await fetch(path, {
+        method,
+        headers,
+        ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+    });
+    let data;
+    try {
+        data = await response.json();
+    } catch (error) {
+        throw new Error(response.ok ? "La API devolvió una respuesta no válida." : `Error HTTP ${response.status}.`, { cause: error });
+    }
+
+    if (response.status === 401 && authenticated) {
+        clearSession();
+        showAuth("login");
+    }
+    if (!response.ok) throw new Error(data.error || data.errors?.[0]?.msg || "No se pudo completar la solicitud.");
+    return data;
+}
+
+async function loadPrompts() {
+    const prompts = await api("/api/v1/promptsConfig", { authenticated: false });
+    const select = $("#readingType");
+    select.replaceChildren(new Option("Selecciona el tipo de lectura", ""));
+    prompts.forEach((prompt) => {
+        const type = prompt.tipo_lectura || prompt.categoria || prompt.nombre;
+        select.add(new Option(prompt.nombre, prompt._id));
+        select.options[select.options.length - 1].dataset.type = type;
+    });
+    select.value = prompts[0]?._id || "";
+    $("#createReading").disabled = prompts.length === 0;
+    if (prompts.length === 0) $("#dashboardStatus").textContent = "No hay plantillas de lectura activas.";
+    return prompts;
+}
+
+async function loadDashboard() {
+    $("#dashboardStatus").textContent = "Cargando lecturas...";
+    try {
+        const [prompts, readings] = await Promise.all([
+            loadPrompts(),
+            api("/api/v1/lecturasIA"),
+        ]);
+        renderReadings(readings);
+        if (prompts.length) $("#dashboardStatus").textContent = readings.length
+            ? `${readings.length} lectura(s) registrada(s).`
+            : "Aún no hay lecturas registradas.";
+    } catch (error) {
+        $("#dashboardStatus").textContent = error.message;
+        if (error.message.includes("iniciar sesión") || error.message.includes("sesión")) {
+            showToast(error.message, "error");
+        }
+    }
+}
+
+function escapeHtml(value) {
+    return String(value ?? "").replace(/[&<>'"]/g, (character) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "'": "&#39;",
+        '"': "&quot;",
+    })[character]);
+}
+
+function renderReadings(readings) {
+    readingsCache.splice(0, readingsCache.length, ...readings.slice(0, 5));
+    $("#readings").innerHTML = readingsCache.map((item, index) => `
+        <li class="reading">
+            <strong>${escapeHtml(item.resultado || "Lectura numerológica")}</strong>
+            <div class="reading-meta">${escapeHtml(item.respuesta || "Sin respuesta")}</div>
+            <div class="reading-actions">
+                <button class="ghost print-reading" type="button" data-reading-index="${index}">Imprimir lectura</button>
+            </div>
+        </li>
+    `).join("");
+}
+
+function printReading(index) {
+    const item = readingsCache[index];
+    if (!item) return;
+
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+        showToast("Permite las ventanas emergentes para imprimir.", "error");
+        return;
+    }
+    printWindow.opener = null;
+    const date = item.fecha || item.createdAt;
+    printWindow.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Lectura numerológica</title>
+        <style>body{margin:0;padding:36px;color:#111;font:16px Georgia,serif}h1{margin:0 0 8px;font-size:28px}h2{margin:24px 0 7px;font-size:16px}p{margin:0;line-height:1.6;white-space:pre-wrap}.date{color:#555;font:12px Arial,sans-serif}</style></head>
+        <body><main><h1>Lectura numerológica</h1>
+        <p class="date">${escapeHtml(date ? new Date(date).toLocaleString("es-ES") : "Fecha no disponible")}</p>
+        <h2>Respuesta</h2><p>${escapeHtml(item.respuesta || "Sin respuesta")}</p>
+        <h2>Análisis</h2><p>${escapeHtml(item.analisis || "Sin análisis")}</p>
+        <h2>Resultado</h2><p>${escapeHtml(item.resultado || "Sin resultado")}</p></main></body></html>`);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+}
+
+document.querySelectorAll("[data-switch]").forEach((button) => {
+    button.addEventListener("click", () => switchView(button.dataset.switch));
+});
+
+document.querySelectorAll(".eye").forEach((button) => {
+    button.addEventListener("click", () => {
+        const input = $(`#${button.dataset.eye}`);
+        const visible = input.type === "password";
+        input.type = visible ? "text" : "password";
+        button.setAttribute("aria-label", visible ? "Ocultar contraseña" : "Mostrar contraseña");
+        button.textContent = visible ? "Ocultar" : "Mostrar";
+    });
+});
+
+["loginEmail", "loginPassword"].forEach((id) => {
+    $(`#${id}`).addEventListener("input", () => validateLogin());
+});
+["registerName", "registerEmail", "registerBirthDate", "registerPhone", "confirmPassword"].forEach((id) => {
+    $(`#${id}`).addEventListener("input", () => validateRegister());
+});
+$("#registerPassword").addEventListener("input", updatePasswordStrength);
+$("#termsAccepted").addEventListener("change", () => validateRegister());
+
+$("#loginForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!validateLogin()) return;
+
+    const button = event.currentTarget.querySelector(".primary");
+    setLoading(button, true, "Iniciar sesión");
+    try {
+        const session = await api("/api/v1/usuarios/login", {
+            method: "POST",
+            authenticated: false,
+            body: {
+                email: $("#loginEmail").value.trim().toLowerCase(),
+                password: $("#loginPassword").value,
+            },
+        });
+        saveSession(session, $("#rememberMe").checked);
+        showToast("Sesión iniciada correctamente.");
+        showDashboard(session.usuario);
+    } catch (error) {
+        showToast(error.message, "error");
+    } finally {
+        setLoading(button, false, "Iniciar sesión");
+    }
+});
+
+$("#registerForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!validateRegister()) return;
+
+    const form = event.currentTarget;
+    const button = event.currentTarget.querySelector(".primary");
+    setLoading(button, true, "Crear cuenta");
+    try {
+        const credentials = {
+            nombre: $("#registerName").value.trim(),
+            email: $("#registerEmail").value.trim().toLowerCase(),
+            fechaNacimiento: $("#registerBirthDate").value,
+            genero: $("#registerGender").value,
+            telefono: $("#registerPhone").value.trim(),
+            password: $("#registerPassword").value,
+        };
+        await api("/api/v1/usuarios", { method: "POST", authenticated: false, body: credentials });
+        const session = await api("/api/v1/usuarios/login", {
+            method: "POST",
+            authenticated: false,
+            body: { email: credentials.email, password: credentials.password },
+        });
+        saveSession(session, true);
+        form.reset();
+        $("#registerSubmit").disabled = true;
+        showToast("Cuenta creada correctamente.");
+        showDashboard(session.usuario);
+    } catch (error) {
+        showToast(error.message, "error");
+    } finally {
+        setLoading(button, false, "Crear cuenta");
+        validateRegister(false);
+    }
+});
+
+$("#readingForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const promptId = $("#readingType").value;
+    if (!promptId) {
+        showToast("Selecciona una plantilla de lectura activa.", "error");
+        return;
+    }
+
+    const button = $("#createReading");
+    setLoading(button, true, "Generar lectura");
+    try {
+        const result = await api("/api/v1/lecturasIA", {
+            method: "POST",
+            body: { prompt_usado_id: promptId },
+        });
+        showToast(result.cached ? "Se recuperó tu lectura guardada." : "Lectura generada correctamente.");
+        await loadDashboard();
+    } catch (error) {
+        showToast(error.message, "error");
+    } finally {
+        setLoading(button, false, "Generar lectura");
+    }
+});
+
+$("#readings").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-reading-index]");
+    if (button) printReading(Number(button.dataset.readingIndex));
+});
+
+$("#logoutButton").addEventListener("click", () => {
+    clearSession();
+    showAuth("login");
+    showToast("Sesión cerrada.");
+});
+
+$("#termsLink").addEventListener("click", () => {
+    $("#modalBg").classList.add("show");
+});
+$("#closeModal").addEventListener("click", () => {
+    $("#modalBg").classList.remove("show");
+});
+$("#modalBg").addEventListener("click", (event) => {
+    if (event.target === event.currentTarget) event.currentTarget.classList.remove("show");
+});
+
+if (activeSession) showDashboard(activeSession.usuario);
+else if (location.hash === "#register") switchView("register");

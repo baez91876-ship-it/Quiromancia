@@ -2,12 +2,20 @@ import { LecturaIA } from "../models/lecturasIA.model.js";
 import { PromptConfig } from "../models/promptsConfig.model.js";
 import { MatrizNumerologica } from "../models/matricesNumerologicas.model.js";
 import { BitacoraTransaccion } from "../models/bitacoraTransacciones.model.js";
+import { generarLectura, GeminiServiceError } from "../src/services/IA.js";
+import { GEMINI_MODEL } from "../config/gemini.js";
+
+const responderLecturaExistente = async (res, lectura) => {
+    const bitacora = await BitacoraTransaccion.findOne({ lectura_id: lectura._id, tipo: "lectura" });
+    return res.status(200).json({ lectura, bitacora, cached: true });
+};
 
 export const createLecturaIA = async (req, res) => {
     try {
-        const { usuario_id, prompt_usado_id, respuesta, analisis, metadata, resultado } = req.body;
+        const { prompt_usado_id } = req.body;
+        const usuario_id = req.usuario._id;
 
-        const prompt = await PromptConfig.findById(prompt_usado_id);
+        const prompt = await PromptConfig.findOne({ _id: prompt_usado_id, activo: true });
         if (!prompt || !prompt.activo) {
             return res.status(400).json({ error: "El prompt no existe o no está activo" });
         }
@@ -17,7 +25,28 @@ export const createLecturaIA = async (req, res) => {
             return res.status(400).json({ error: "No existe una matriz numerológica para este usuario" });
         }
 
-        const lectura = new LecturaIA({ usuario_id, prompt_usado_id, respuesta, analisis, metadata, resultado });
+        const matrizActualizadaEn = matriz.updatedAt || matriz.fecha;
+        const filtroLectura = {
+            usuario_id,
+            prompt_usado_id,
+            prompt_actualizado_en: prompt.updatedAt || prompt.createdAt,
+            matriz_id: matriz._id,
+            matriz_actualizada_en: matrizActualizadaEn,
+        };
+        const lecturaExistente = await LecturaIA.findOne(filtroLectura);
+        if (lecturaExistente) {
+            return await responderLecturaExistente(res, lecturaExistente);
+        }
+
+        const contenido = await generarLectura({ promptConfig: prompt, matriz });
+        const lectura = new LecturaIA({
+            ...filtroLectura,
+            ...contenido,
+            metadata: {
+                modelo: GEMINI_MODEL,
+                generadaEn: new Date(),
+            },
+        });
         await lectura.save();
 
         const bitacora = new BitacoraTransaccion({
@@ -30,15 +59,50 @@ export const createLecturaIA = async (req, res) => {
         });
         await bitacora.save();
 
-        return res.status(201).json({ lectura, bitacora });
+        return res.status(201).json({ lectura, bitacora, cached: false });
     } catch (error) {
+        if (error instanceof GeminiServiceError) {
+            console.error("Error en el servicio de Gemini:", {
+                message: error.message,
+                cause: error.cause?.name,
+                status: error.cause?.status,
+            });
+            return res.status(503).json({ error: error.message });
+        }
+
+        if (error.code === 11000) {
+            try {
+                const { prompt_usado_id } = req.body;
+                const usuario_id = req.usuario._id;
+                const [matriz, prompt] = await Promise.all([
+                    MatrizNumerologica.findOne({ usuario_id }),
+                    PromptConfig.findById(prompt_usado_id),
+                ]);
+                const lecturaExistente = matriz && prompt
+                    ? await LecturaIA.findOne({
+                        usuario_id,
+                        prompt_usado_id,
+                        prompt_actualizado_en: prompt.updatedAt || prompt.createdAt,
+                        matriz_id: matriz._id,
+                        matriz_actualizada_en: matriz.updatedAt || matriz.fecha,
+                    })
+                    : null;
+                if (lecturaExistente) {
+                    return await responderLecturaExistente(res, lecturaExistente);
+                }
+            } catch (lookupError) {
+                console.error("Error al recuperar una lectura existente:", lookupError);
+            }
+        }
+
+        console.error("Error al guardar la lectura:", error);
         return res.status(500).json({ error: error.message });
     }
 };
 
 export const getLecturasIA = async (req, res) => {
     try {
-        const lecturas = await LecturaIA.find();
+        const lecturas = await LecturaIA.find({ usuario_id: req.usuario._id }).sort({ fecha: -1 }).limit(50);
         return res.status(200).json(lecturas);
     } catch (error) {
         return res.status(500).json({ error: error.message });
@@ -48,25 +112,7 @@ export const getLecturasIA = async (req, res) => {
 export const getLecturaIAById = async (req, res) => {
     try {
         const { id } = req.params;
-        const lectura = await LecturaIA.findById(id);
-        if (!lectura) {
-            return res.status(404).json({ error: "LecturaIA no encontrada" });
-        }
-        return res.status(200).json(lectura);
-    } catch (error) {
-        return res.status(500).json({ error: error.message });
-    }
-};
-
-export const updateLecturaIA = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { usuario_id, prompt_usado_id, respuesta, analisis, metadata, resultado } = req.body;
-        const lectura = await LecturaIA.findByIdAndUpdate(
-            id,
-            { usuario_id, prompt_usado_id, respuesta, analisis, metadata, resultado },
-            { new: true, runValidators: true }
-        );
+        const lectura = await LecturaIA.findOne({ _id: id, usuario_id: req.usuario._id });
         if (!lectura) {
             return res.status(404).json({ error: "LecturaIA no encontrada" });
         }
@@ -79,7 +125,7 @@ export const updateLecturaIA = async (req, res) => {
 export const deleteLecturaIA = async (req, res) => {
     try {
         const { id } = req.params;
-        const lectura = await LecturaIA.findByIdAndDelete(id);
+        const lectura = await LecturaIA.findOneAndDelete({ _id: id, usuario_id: req.usuario._id });
         if (!lectura) {
             return res.status(404).json({ error: "LecturaIA no encontrada" });
         }
@@ -92,9 +138,9 @@ export const deleteLecturaIA = async (req, res) => {
 export const getLecturaCompleta = async (req, res) => {
     try {
         const { id } = req.params;
-        const lectura = await LecturaIA.findById(id)
-            .populate("usuario_id")
-            .populate("prompt_usado_id");
+        const lectura = await LecturaIA.findOne({ _id: id, usuario_id: req.usuario._id })
+            .populate("usuario_id", "nombre email")
+            .populate("prompt_usado_id", "nombre descripcion categoria tipo_lectura");
         if (!lectura) {
             return res.status(404).json({ error: "LecturaIA no encontrada" });
         }

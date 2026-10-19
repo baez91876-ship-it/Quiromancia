@@ -13,7 +13,7 @@ export const auditarPeticion = (req, res, next) => {
             return;
         }
 
-        const usuarioId = req.body?.usuario_id || req.params?.id;
+        const usuarioId = req.usuario?._id || req.body?.usuario_id || req.params?.id;
         const lecturaId = req.body?.lectura_id;
         const details = JSON.stringify({
             method: req.method,
