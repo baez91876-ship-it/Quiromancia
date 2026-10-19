@@ -2,15 +2,19 @@ import bcryptjs from 'bcryptjs';
 import { Usuario } from '../models/usuarios.model.js';
 import { LecturaIA } from '../models/lecturasIA.model.js';
 import { MatrizNumerologica } from '../models/matricesNumerologicas.model.js';
-import { calcularPerfilNumerologico, asegurarMatrizNumerologica } from '../src/services/numerologia.service.js';
+import {
+    actualizarMatrizNumerologica,
+    calcularPerfilNumerologico,
+    asegurarMatrizNumerologica,
+} from '../src/services/numerologia.service.js';
+import { responderError } from '../src/utils/responderError.js';
 
 export const createUsuario = async (req, res) => {
     let usuario;
     try {
         const { nombre, email, fechaNacimiento, genero, telefono, password } = req.body;
 
-        const salt = bcryptjs.genSaltSync();
-        const hashedPassword = bcryptjs.hashSync(password, salt);
+        const hashedPassword = await bcryptjs.hash(password, 12);
 
         usuario = new Usuario({ nombre, email, fechaNacimiento, genero, telefono, password: hashedPassword });
         await usuario.save();
@@ -30,7 +34,7 @@ export const createUsuario = async (req, res) => {
             }
         }
         console.error('No se pudo crear el usuario y su matriz:', error);
-        return res.status(error.name === 'ValidationError' || error.code === 11000 ? 400 : 500).json({
+        return res.status(error.name === 'ValidationError' ? 400 : error.code === 11000 ? 409 : 500).json({
             error: error.name === 'ValidationError'
                 ? 'Los datos del usuario no son válidos'
                 : error.code === 11000
@@ -45,7 +49,7 @@ export const getUsuarios = async (req, res) => {
         const usuarios = await Usuario.find();
         return res.status(200).json(usuarios);
     } catch (error) {
-        return res.status(500).json({ error: error.message });
+        return responderError(res, error, 'No se pudieron consultar los usuarios');
     }
 };
 
@@ -60,7 +64,7 @@ export const getUsuarioById = async (req, res) => {
 
         return res.status(200).json(usuario);
     } catch (error) {
-        return res.status(500).json({ error: error.message });
+        return responderError(res, error, 'No se pudo consultar el usuario');
     }
 };
 
@@ -84,9 +88,13 @@ export const updateUsuario = async (req, res) => {
             return res.status(404).json({ error: 'Usuario no encontrado' });
         }
 
+        if (nombre !== undefined || fechaNacimiento !== undefined) {
+            await actualizarMatrizNumerologica(usuarioActualizado);
+        }
+
         return res.status(200).json(usuarioActualizado);
     } catch (error) {
-        return res.status(400).json({ error: error.message });
+        return responderError(res, error, 'No se pudo actualizar el usuario');
     }
 };
 
@@ -108,7 +116,7 @@ export const deleteUsuario = async (req, res) => {
 
         return res.status(200).json({ message: 'Usuario eliminado correctamente' });
     } catch (error) {
-        return res.status(500).json({ error: error.message });
+        return responderError(res, error, 'No se pudo eliminar el usuario');
     }
 };
 
@@ -131,6 +139,6 @@ export const getPerfilNumerologico = async (req, res) => {
             }),
         });
     } catch (error) {
-        return res.status(500).json({ error: 'No se pudo calcular el perfil numerológico' });
+        return responderError(res, error, 'No se pudo calcular el perfil numerológico');
     }
 };

@@ -1,4 +1,5 @@
 import { BitacoraTransaccion } from "../models/bitacoraTransacciones.model.js";
+import { responderError } from "../src/utils/responderError.js";
 
 export const createBitacoraTransaccion = async (req, res) => {
     try {
@@ -7,7 +8,7 @@ export const createBitacoraTransaccion = async (req, res) => {
         await transaccion.save();
         return res.status(201).json(transaccion);
     } catch (error) {
-        return res.status(500).json({ error: error.message });
+        return responderError(res, error, "No se pudo crear el registro de auditoría");
     }
 };
 
@@ -16,7 +17,7 @@ export const getBitacoraTransacciones = async (req, res) => {
         const transacciones = await BitacoraTransaccion.find();
         return res.status(200).json(transacciones);
     } catch (error) {
-        return res.status(500).json({ error: error.message });
+        return responderError(res, error, "No se pudo consultar la auditoría");
     }
 };
 
@@ -29,7 +30,7 @@ export const getBitacoraTransaccionById = async (req, res) => {
         }
         return res.status(200).json(transaccion);
     } catch (error) {
-        return res.status(500).json({ error: error.message });
+        return responderError(res, error, "No se pudo consultar el registro de auditoría");
     }
 };
 
@@ -47,7 +48,7 @@ export const updateBitacoraTransaccion = async (req, res) => {
         }
         return res.status(200).json(transaccion);
     } catch (error) {
-        return res.status(500).json({ error: error.message });
+        return responderError(res, error, "No se pudo actualizar el registro de auditoría");
     }
 };
 
@@ -60,6 +61,6 @@ export const deleteBitacoraTransaccion = async (req, res) => {
         }
         return res.status(200).json({ message: "BitacoraTransaccion eliminada correctamente" });
     } catch (error) {
-        return res.status(500).json({ error: error.message });
+        return responderError(res, error, "No se pudo eliminar el registro de auditoría");
     }
 };

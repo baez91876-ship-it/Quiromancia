@@ -1,17 +1,25 @@
 import { MatrizNumerologica } from "../../models/matricesNumerologicas.model.js";
 
-const reducirNumero = (valor) => {
-  let total = Number(valor) || 0;
+export const reducirNumero = (valor) => {
+  const numericValue = Number(valor);
+  if (!Number.isFinite(numericValue)) {
+    return 0;
+  }
+  let total = Math.abs(Math.trunc(numericValue));
 
   while (total > 9) {
-    total = Array.from(String(total), Number).reduce((sum, digit) => sum + digit, 0);
+    total = String(total).split("").reduce((sum, digit) => sum + Number(digit), 0);
   }
 
   return total || 0;
 };
 
-const calcularNumeroNombre = (nombre) => {
-  const letras = (nombre || '').toUpperCase().replace(/[^A-Z]/g, '');
+export const calcularNumeroNombre = (nombre) => {
+  const letras = (nombre || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase()
+    .replace(/[^A-Z]/g, "");
 
   if (!letras) {
     return 0;
@@ -25,7 +33,7 @@ const calcularNumeroNombre = (nombre) => {
   return reducirNumero(valor);
 };
 
-const calcularNumeroDestino = (fechaNacimiento) => {
+export const calcularNumeroDestino = (fechaNacimiento) => {
   const fecha = new Date(fechaNacimiento);
 
   if (Number.isNaN(fecha.getTime())) {
@@ -33,9 +41,9 @@ const calcularNumeroDestino = (fechaNacimiento) => {
   }
 
   const valor = [
-    fecha.getDate(),
-    fecha.getMonth() + 1,
-    fecha.getFullYear(),
+    fecha.getUTCDate(),
+    fecha.getUTCMonth() + 1,
+    fecha.getUTCFullYear(),
   ].join('');
 
   return reducirNumero(valor);
@@ -80,4 +88,25 @@ export const asegurarMatrizNumerologica = async (usuario) => {
     ...perfil,
     resultado: JSON.stringify(perfil.resultado),
   });
+};
+
+export const actualizarMatrizNumerologica = async (usuario) => {
+  const perfil = calcularPerfilNumerologico({
+    nombre: usuario.nombre,
+    fechaNacimiento: usuario.fechaNacimiento,
+  });
+
+  return MatrizNumerologica.findOneAndUpdate(
+    { usuario_id: usuario._id },
+    {
+      ...perfil,
+      resultado: JSON.stringify(perfil.resultado),
+    },
+    {
+      new: true,
+      upsert: true,
+      runValidators: true,
+      setDefaultsOnInsert: true,
+    }
+  );
 };

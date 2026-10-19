@@ -9,9 +9,11 @@ import {
 import { bitacoraCreateValidator, bitacoraUpdateValidator } from "../src/validators/bitacora.validator.js";
 import { idValidator } from "../src/validators/id.validator.js";
 import { validarCampos } from "../src/middlewares/validarCampos.js";
+import { validarApiKey } from "../src/middlewares/validarApiKey.js";
 
 const router = Router();
 
+router.use(validarApiKey);
 router.post("/", bitacoraCreateValidator, validarCampos, createBitacoraTransaccion);
 router.get("/", getBitacoraTransacciones);
 router.get("/:id", idValidator, validarCampos, getBitacoraTransaccionById);

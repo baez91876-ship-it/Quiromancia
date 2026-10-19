@@ -100,3 +100,13 @@ La suite volvió a pasar después de corregir la firma. La dificultad era que el
 5. **Lecturas repetidas:** el endpoint busca una lectura existente por usuario, versión de la plantilla, matriz y versión de la matriz antes de llamar al modelo. Una repetición devuelve la lectura guardada (`cached: true`); si cambian la plantilla o la matriz, se genera otra lectura. Un índice único también evita persistir duplicados en solicitudes concurrentes.
 
 La petición de creación solo necesita `prompt_usado_id`; el usuario se identifica con el JWT y no acepta la plantilla ni el texto generado desde el cliente. Las lecturas se consultan y guardan por el usuario autenticado. `GEMINI_API_KEY` se configura en el entorno del servidor, nunca en el frontend.
+
+## 8. Autorización, cálculos y pruebas añadidas
+
+- Los endpoints privados de usuario y matrices requieren JWT. Las operaciones de usuario verifican que el ID de ruta coincida con el ID del token; las consultas y cambios de matrices se filtran por el usuario autenticado.
+- Las operaciones administrativas de usuarios, prompts y bitácora requieren `x-api-key`; sin `API_KEY` configurada el servicio responde 503, y una clave ausente o incorrecta responde 401. Las plantillas activas solo publican metadatos, no el prompt interno.
+- Los validadores rechazan campos no permitidos y las actualizaciones de perfil no aceptan cambios de contraseña por mass assignment. El cambio de nombre o fecha de nacimiento recalcula la matriz persistida.
+- El cálculo del nombre normaliza tildes y `ñ`; el cálculo de fecha usa componentes UTC para evitar resultados distintos por zona horaria. La suma y reducción están cubiertas por pruebas unitarias.
+- `npm test` cubre parseo y validación de Gemini, algoritmos numerológicos, respuestas de error, controles HTTP de autenticación/propiedad de recursos, validación de payloads y actualización de la matriz.
+
+La prueba de API usa Express real y stubs de persistencia para no depender de credenciales ni de servicios externos. No reemplaza una prueba de despliegue: la conexión real a MongoDB, las cinco colecciones en una base concreta y una llamada real a Gemini deben validarse en un entorno configurado.

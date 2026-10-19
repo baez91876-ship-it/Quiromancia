@@ -4,6 +4,7 @@ import { MatrizNumerologica } from "../models/matricesNumerologicas.model.js";
 import { BitacoraTransaccion } from "../models/bitacoraTransacciones.model.js";
 import { generarLectura, GeminiServiceError } from "../src/services/IA.js";
 import { GEMINI_MODEL } from "../config/gemini.js";
+import { responderError } from "../src/utils/responderError.js";
 
 const responderLecturaExistente = async (res, lectura) => {
     const bitacora = await BitacoraTransaccion.findOne({ lectura_id: lectura._id, tipo: "lectura" });
@@ -96,7 +97,7 @@ export const createLecturaIA = async (req, res) => {
         }
 
         console.error("Error al guardar la lectura:", error);
-        return res.status(500).json({ error: error.message });
+        return responderError(res, error, "No se pudo guardar la lectura");
     }
 };
 
@@ -105,7 +106,7 @@ export const getLecturasIA = async (req, res) => {
         const lecturas = await LecturaIA.find({ usuario_id: req.usuario._id }).sort({ fecha: -1 }).limit(50);
         return res.status(200).json(lecturas);
     } catch (error) {
-        return res.status(500).json({ error: error.message });
+        return responderError(res, error, "No se pudieron consultar las lecturas");
     }
 };
 
@@ -118,7 +119,7 @@ export const getLecturaIAById = async (req, res) => {
         }
         return res.status(200).json(lectura);
     } catch (error) {
-        return res.status(500).json({ error: error.message });
+        return responderError(res, error, "No se pudo consultar la lectura");
     }
 };
 
@@ -131,7 +132,7 @@ export const deleteLecturaIA = async (req, res) => {
         }
         return res.status(200).json({ message: "LecturaIA eliminada correctamente" });
     } catch (error) {
-        return res.status(500).json({ error: error.message });
+        return responderError(res, error, "No se pudo eliminar la lectura");
     }
 };
 
@@ -146,6 +147,6 @@ export const getLecturaCompleta = async (req, res) => {
         }
         return res.status(200).json(lectura);
     } catch (error) {
-        return res.status(500).json({ error: error.message });
+        return responderError(res, error, "No se pudo consultar la lectura completa");
     }
 };

@@ -1,4 +1,5 @@
 import { PromptConfig } from "../models/promptsConfig.model.js";
+import { responderError } from "../src/utils/responderError.js";
 
 export const createPromptConfig = async (req, res) => {
     try {
@@ -7,7 +8,7 @@ export const createPromptConfig = async (req, res) => {
         await promptConfig.save();
         return res.status(201).json(promptConfig);
     } catch (error) {
-        return res.status(500).json({ error: error.message });
+        return responderError(res, error, "No se pudo crear la plantilla");
     }
 };
 
@@ -18,7 +19,7 @@ export const getPromptsConfig = async (req, res) => {
             .sort({ nombre: 1 });
         return res.status(200).json(prompts);
     } catch (error) {
-        return res.status(500).json({ error: error.message });
+        return responderError(res, error, "No se pudieron consultar las plantillas");
     }
 };
 
@@ -32,7 +33,7 @@ export const getPromptConfigById = async (req, res) => {
         }
         return res.status(200).json(promptConfig);
     } catch (error) {
-        return res.status(500).json({ error: error.message });
+        return responderError(res, error, "No se pudo consultar la plantilla");
     }
 };
 
@@ -50,7 +51,7 @@ export const updatePromptConfig = async (req, res) => {
         }
         return res.status(200).json(promptConfig);
     } catch (error) {
-        return res.status(500).json({ error: error.message });
+        return responderError(res, error, "No se pudo actualizar la plantilla");
     }
 };
 
@@ -63,6 +64,6 @@ export const deletePromptConfig = async (req, res) => {
         }
         return res.status(200).json({ message: "PromptConfig eliminado correctamente" });
     } catch (error) {
-        return res.status(500).json({ error: error.message });
+        return responderError(res, error, "No se pudo eliminar la plantilla");
     }
 };

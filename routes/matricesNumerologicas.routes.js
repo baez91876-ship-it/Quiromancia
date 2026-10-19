@@ -10,9 +10,11 @@ import {
 import { matrizCreateValidator, matrizUpdateValidator } from "../src/validators/matriz.validator.js";
 import { idValidator } from "../src/validators/id.validator.js";
 import { validarCampos } from "../src/middlewares/validarCampos.js";
+import { validarJWT } from "../middlewares/token.js";
 
 const router = Router();
 
+router.use(validarJWT);
 router.post("/", matrizCreateValidator, validarCampos, createMatrizNumerologica);
 router.get("/", getMatricesNumerologicas);
 router.get("/completa/:id", idValidator, validarCampos, getMatrizConUsuario);

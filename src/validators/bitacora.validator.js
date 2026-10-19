@@ -1,4 +1,4 @@
-import { body } from "express-validator";
+import { body, checkExact } from "express-validator";
 import { Usuario } from "../../models/usuarios.model.js";
 import { LecturaIA } from "../../models/lecturasIA.model.js";
 
@@ -19,17 +19,19 @@ const lecturaExists = async (id) => {
 export const bitacoraCreateValidator = [
     body("usuario_id", "El usuario_id es obligatorio").notEmpty().isMongoId().bail().custom(usuarioExists),
     body("lectura_id", "El lectura_id es obligatorio").notEmpty().isMongoId().bail().custom(lecturaExists),
-    body("tipo", "El tipo es obligatorio").notEmpty().trim(),
+    body("tipo", "El tipo es obligatorio").isString().bail().notEmpty().trim(),
     body("monto", "El monto es obligatorio").notEmpty().isFloat({ min: 0 }),
-    body("estado", "El estado es obligatorio").notEmpty().trim(),
-    body("detalles", "Los detalles son obligatorios").notEmpty().trim(),
+    body("estado", "El estado es obligatorio").isString().bail().notEmpty().trim(),
+    body("detalles", "Los detalles son obligatorios").isString().bail().notEmpty().trim(),
+    checkExact(undefined, { locations: ["body"] }),
 ];
 
 export const bitacoraUpdateValidator = [
     body("usuario_id").optional().isMongoId().bail().custom(usuarioExists),
     body("lectura_id").optional().isMongoId().bail().custom(lecturaExists),
-    body("tipo").optional().notEmpty().trim(),
+    body("tipo").optional().isString().bail().notEmpty().trim(),
     body("monto").optional().isFloat({ min: 0 }),
-    body("estado").optional().notEmpty().trim(),
-    body("detalles").optional().notEmpty().trim(),
+    body("estado").optional().isString().bail().notEmpty().trim(),
+    body("detalles").optional().isString().bail().notEmpty().trim(),
+    checkExact(undefined, { locations: ["body"] }),
 ];

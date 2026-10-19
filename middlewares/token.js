@@ -70,7 +70,7 @@ export const login = async (req, res) => {
             return res.status(401).json({ error: "Email o contraseña incorrectos" });
         }
 
-        const validPassword = bcryptjs.compareSync(password, usuario.password);
+        const validPassword = await bcryptjs.compare(password, usuario.password);
 
         if (!validPassword) {
             return res.status(401).json({ error: "Email o contraseña incorrectos" });

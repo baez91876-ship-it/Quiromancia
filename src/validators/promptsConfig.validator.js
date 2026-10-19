@@ -1,4 +1,4 @@
-import { body } from "express-validator";
+import { body, checkExact } from "express-validator";
 import { Usuario } from "../../models/usuarios.model.js";
 
 const usuarioExists = async (id) => {
@@ -9,19 +9,22 @@ const usuarioExists = async (id) => {
 };
 
 export const promptCreateValidator = [
-    body("nombre", "El nombre es obligatorio").trim().notEmpty().isLength({ max: 100 }),
-    body("prompt", "El prompt es obligatorio y máximo 2000 caracteres").trim().notEmpty().isLength({ max: 2000 }),
-    body("descripcion", "La descripción es obligatoria").trim().notEmpty().isLength({ max: 500 }),
-    body("categoria", "La categoría es obligatoria").trim().notEmpty(),
-    body("tipo_lectura", "El tipo de lectura es obligatorio").trim().notEmpty(),
+    body("nombre", "El nombre es obligatorio").isString().bail().trim().notEmpty().isLength({ max: 100 }),
+    body("prompt", "El prompt es obligatorio y máximo 2000 caracteres").isString().bail().trim().notEmpty().isLength({ max: 2000 }),
+    body("descripcion", "La descripción es obligatoria").isString().bail().trim().notEmpty().isLength({ max: 500 }),
+    body("categoria", "La categoría es obligatoria").isString().bail().trim().notEmpty(),
+    body("tipo_lectura", "El tipo de lectura es obligatorio").isString().bail().trim().notEmpty(),
     body("creadoPor", "El creador es obligatorio").notEmpty().isMongoId().bail().custom(usuarioExists),
+    checkExact(undefined, { locations: ["body"] }),
 ];
 
 export const promptUpdateValidator = [
-    body("nombre").optional().trim().notEmpty().isLength({ max: 100 }),
-    body("prompt").optional().trim().notEmpty().isLength({ max: 2000 }),
-    body("descripcion").optional().trim().notEmpty().isLength({ max: 500 }),
-    body("categoria").optional().trim().notEmpty(),
-    body("tipo_lectura").optional().trim().notEmpty(),
+    body("nombre").optional().isString().bail().trim().notEmpty().isLength({ max: 100 }),
+    body("prompt").optional().isString().bail().trim().notEmpty().isLength({ max: 2000 }),
+    body("descripcion").optional().isString().bail().trim().notEmpty().isLength({ max: 500 }),
+    body("activo").optional().isBoolean(),
+    body("categoria").optional().isString().bail().trim().notEmpty(),
+    body("tipo_lectura").optional().isString().bail().trim().notEmpty(),
     body("creadoPor").optional().isMongoId().bail().custom(usuarioExists),
+    checkExact(undefined, { locations: ["body"] }),
 ];
