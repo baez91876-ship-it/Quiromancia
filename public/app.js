@@ -2,7 +2,7 @@ const $ = (selector) => document.querySelector(selector);
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const sessionKey = "quiromancia_session";
 const apiBaseUrl = location.hostname === "baez91876-ship-it.github.io"
-    ? "https://quiromancia-api.onrender.com"
+    ? "https://quiromancia.onrender.com"
     : "";
 const readingsCache = [];
 let activeSession = readSession();
