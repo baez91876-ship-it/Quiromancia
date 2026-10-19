@@ -48,6 +48,39 @@ test("los cinco modelos declaran los campos requeridos principales", () => {
     assert.equal(BitacoraTransaccion.schema.path("tipo").isRequired, true);
 });
 
+test("CORS permite GitHub Pages y rechaza preflight de origen no autorizado", async (t) => {
+    const previousOrigins = process.env.CORS_ORIGINS;
+    process.env.CORS_ORIGINS = "https://baez91876-ship-it.github.io";
+    const server = await startServer(createApp());
+    t.after(async () => {
+        await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+        if (previousOrigins === undefined) delete process.env.CORS_ORIGINS;
+        else process.env.CORS_ORIGINS = previousOrigins;
+    });
+
+    const baseUrl = `http://127.0.0.1:${server.address().port}/api/v1/usuarios`;
+    const allowedPreflight = await fetch(baseUrl, {
+        method: "OPTIONS",
+        headers: {
+            Origin: "https://baez91876-ship-it.github.io",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "authorization,content-type",
+        },
+    });
+    assert.equal(allowedPreflight.status, 204);
+    assert.equal(allowedPreflight.headers.get("access-control-allow-origin"), "https://baez91876-ship-it.github.io");
+    assert.match(allowedPreflight.headers.get("access-control-allow-headers"), /authorization/i);
+
+    const deniedPreflight = await fetch(baseUrl, {
+        method: "OPTIONS",
+        headers: {
+            Origin: "https://untrusted.example",
+            "Access-Control-Request-Method": "POST",
+        },
+    });
+    assert.equal(deniedPreflight.status, 403);
+});
+
 test("validarJWT rechaza solicitudes sin token", async () => {
     const previousSecret = process.env.SECRETORPRIVATEKEY;
     process.env.SECRETORPRIVATEKEY = "unit-test-secret";

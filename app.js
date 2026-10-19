@@ -12,9 +12,42 @@ import { manejarErrores } from './middlewares/errores.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const defaultAllowedOrigins = [
+  'https://baez91876-ship-it.github.io',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+];
+
+const createCorsMiddleware = () => {
+  const allowedOrigins = new Set(
+    (process.env.CORS_ORIGINS || defaultAllowedOrigins.join(','))
+      .split(',')
+      .map((origin) => origin.trim())
+      .filter(Boolean),
+  );
+
+  return (req, res, next) => {
+    const origin = req.get('Origin');
+    if (!origin) return next();
+    if (!allowedOrigins.has(origin)) {
+      if (req.method === 'OPTIONS') {
+        return res.status(403).json({ error: 'Origen no permitido' });
+      }
+      return next();
+    }
+
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type, x-api-key');
+    res.vary('Origin');
+    if (req.method === 'OPTIONS') return res.sendStatus(204);
+    return next();
+  };
+};
 
 export const createApp = () => {
   const app = express();
+  app.use(createCorsMiddleware());
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
   app.use(express.static(path.join(__dirname, 'public')));

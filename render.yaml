@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: quiromancia-api
+    runtime: node
+    plan: free
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: CORS_ORIGINS
+        value: https://baez91876-ship-it.github.io,http://localhost:3000,http://127.0.0.1:3000
+      - key: MONGO_URI
+        sync: false
+      - key: SECRETORPRIVATEKEY
+        generateValue: true
+      - key: API_KEY
+        generateValue: true
+      - key: GEMINI_API_KEY
+        sync: false

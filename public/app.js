@@ -1,6 +1,9 @@
 const $ = (selector) => document.querySelector(selector);
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const sessionKey = "quiromancia_session";
+const apiBaseUrl = location.hostname === "baez91876-ship-it.github.io"
+    ? "https://quiromancia-api.onrender.com"
+    : "";
 const readingsCache = [];
 let activeSession = readSession();
 let toastTimer;
@@ -125,7 +128,7 @@ async function api(path, { method = "GET", body, authenticated = true } = {}) {
     if (body !== undefined) headers["Content-Type"] = "application/json";
     if (authenticated && activeSession?.token) headers.Authorization = `Bearer ${activeSession.token}`;
 
-    const response = await fetch(path, {
+    const response = await fetch(`${apiBaseUrl}${path}`, {
         method,
         headers,
         ...(body === undefined ? {} : { body: JSON.stringify(body) }),
