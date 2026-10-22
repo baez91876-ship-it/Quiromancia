@@ -10,5 +10,11 @@ const promptExists = async (id) => {
 
 export const lecturaCreateValidator = [
     body("prompt_usado_id", "El prompt_usado_id es obligatorio").notEmpty().isMongoId().bail().custom(promptExists),
+    body("consulta", "La consulta debe tener como máximo 500 caracteres")
+        .optional()
+        .isString()
+        .bail()
+        .trim()
+        .isLength({ max: 500 }),
     checkExact(undefined, { locations: ["body"] }),
 ];

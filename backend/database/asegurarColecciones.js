@@ -27,4 +27,7 @@ export const asegurarColecciones = async () => {
             console.log(`Colección creada: ${nombre}`);
         }
     }
+
+    // Retira el índice único anterior a "consulta", que impedía varias preguntas con la misma plantilla.
+    await LecturaIA.syncIndexes();
 };

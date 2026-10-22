@@ -11,9 +11,22 @@ const responderLecturaExistente = async (res, lectura) => {
     return res.status(200).json({ lectura, bitacora, cached: true });
 };
 
+const construirFiltroLectura = ({ usuario_id, prompt_usado_id, prompt, matriz, consulta }) => ({
+    usuario_id,
+    prompt_usado_id,
+    prompt_actualizado_en: prompt.updatedAt || prompt.createdAt,
+    matriz_id: matriz._id,
+    matriz_actualizada_en: matriz.updatedAt || matriz.fecha,
+    consulta,
+});
+
+// Las lecturas guardadas antes de existir el campo no tienen "consulta".
+const filtroBusqueda = (filtro) => (filtro.consulta ? filtro : { ...filtro, consulta: { $in: [null, ""] } });
+
 export const createLecturaIA = async (req, res) => {
     try {
         const { prompt_usado_id } = req.body;
+        const consulta = req.body.consulta?.trim() || "";
         const usuario_id = req.usuario._id;
 
         const prompt = await PromptConfig.findOne({ _id: prompt_usado_id, activo: true });
@@ -26,20 +39,13 @@ export const createLecturaIA = async (req, res) => {
             return res.status(400).json({ error: "No existe una matriz numerológica para este usuario" });
         }
 
-        const matrizActualizadaEn = matriz.updatedAt || matriz.fecha;
-        const filtroLectura = {
-            usuario_id,
-            prompt_usado_id,
-            prompt_actualizado_en: prompt.updatedAt || prompt.createdAt,
-            matriz_id: matriz._id,
-            matriz_actualizada_en: matrizActualizadaEn,
-        };
-        const lecturaExistente = await LecturaIA.findOne(filtroLectura);
+        const filtroLectura = construirFiltroLectura({ usuario_id, prompt_usado_id, prompt, matriz, consulta });
+        const lecturaExistente = await LecturaIA.findOne(filtroBusqueda(filtroLectura));
         if (lecturaExistente) {
             return await responderLecturaExistente(res, lecturaExistente);
         }
 
-        const contenido = await generarLectura({ promptConfig: prompt, matriz });
+        const contenido = await generarLectura({ promptConfig: prompt, matriz, consulta });
         const lectura = new LecturaIA({
             ...filtroLectura,
             ...contenido,
@@ -56,7 +62,7 @@ export const createLecturaIA = async (req, res) => {
             tipo: "lectura",
             monto: 0,
             estado: "completado",
-            detalles: "Lectura generada con prompt activo",
+            detalles: consulta ? "Lectura generada con consulta del usuario" : "Lectura generada con prompt activo",
         });
         await bitacora.save();
 
@@ -74,19 +80,16 @@ export const createLecturaIA = async (req, res) => {
         if (error.code === 11000) {
             try {
                 const { prompt_usado_id } = req.body;
+                const consulta = req.body.consulta?.trim() || "";
                 const usuario_id = req.usuario._id;
                 const [matriz, prompt] = await Promise.all([
                     MatrizNumerologica.findOne({ usuario_id }),
                     PromptConfig.findById(prompt_usado_id),
                 ]);
                 const lecturaExistente = matriz && prompt
-                    ? await LecturaIA.findOne({
-                        usuario_id,
-                        prompt_usado_id,
-                        prompt_actualizado_en: prompt.updatedAt || prompt.createdAt,
-                        matriz_id: matriz._id,
-                        matriz_actualizada_en: matriz.updatedAt || matriz.fecha,
-                    })
+                    ? await LecturaIA.findOne(filtroBusqueda(
+                        construirFiltroLectura({ usuario_id, prompt_usado_id, prompt, matriz, consulta })
+                    ))
                     : null;
                 if (lecturaExistente) {
                     return await responderLecturaExistente(res, lecturaExistente);

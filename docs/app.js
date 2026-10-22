@@ -196,6 +196,7 @@ function renderReadings(readings) {
     readingsCache.splice(0, readingsCache.length, ...readings.slice(0, 5));
     $("#readings").innerHTML = readingsCache.map((item, index) => `
         <li class="reading">
+            ${item.consulta ? `<div class="reading-query">“${escapeHtml(item.consulta)}”</div>` : ""}
             <strong>${escapeHtml(item.resultado || "Lectura numerológica")}</strong>
             <div class="reading-meta">${escapeHtml(item.respuesta || "Sin respuesta")}</div>
             <div class="reading-actions">
@@ -220,6 +221,7 @@ function printReading(index) {
         <link rel="stylesheet" href="print.css"></head>
         <body><main><h1>Lectura numerológica</h1>
         <p class="date">${escapeHtml(date ? new Date(date).toLocaleString("es-ES") : "Fecha no disponible")}</p>
+        ${item.consulta ? `<h2>Consulta</h2><p>${escapeHtml(item.consulta)}</p>` : ""}
         <h2>Respuesta</h2><p>${escapeHtml(item.respuesta || "Sin respuesta")}</p>
         <h2>Análisis</h2><p>${escapeHtml(item.analisis || "Sin análisis")}</p>
         <h2>Resultado</h2><p>${escapeHtml(item.resultado || "Sin resultado")}</p></main></body></html>`);
@@ -320,13 +322,16 @@ $("#readingForm").addEventListener("submit", async (event) => {
     }
 
     const button = $("#createReading");
+    const consulta = $("#readingQuestion").value.trim();
     setLoading(button, true, "Generar lectura");
     try {
         const result = await api("/api/v1/lecturasIA", {
             method: "POST",
-            body: { prompt_usado_id: promptId },
+            body: { prompt_usado_id: promptId, ...(consulta ? { consulta } : {}) },
         });
         showToast(result.cached ? "Se recuperó tu lectura guardada." : "Lectura generada correctamente.");
+        $("#readingQuestion").value = "";
+        updateQuestionCount();
         await loadDashboard();
     } catch (error) {
         showToast(error.message, "error");
@@ -334,6 +339,11 @@ $("#readingForm").addEventListener("submit", async (event) => {
         setLoading(button, false, "Generar lectura");
     }
 });
+
+function updateQuestionCount() {
+    $("#readingQuestionCount").textContent = `${$("#readingQuestion").value.length}/500`;
+}
+$("#readingQuestion").addEventListener("input", updateQuestionCount);
 
 $("#readings").addEventListener("click", (event) => {
     const button = event.target.closest("[data-reading-index]");

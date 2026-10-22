@@ -6,6 +6,7 @@ const lecturaIASchema = new mongoose.Schema({
     prompt_actualizado_en: { type: Date, required: true },
     matriz_id: { type: mongoose.Schema.Types.ObjectId, ref: "MatrizNumerologica", required: true },
     matriz_actualizada_en: { type: Date, required: true },
+    consulta: { type: String, trim: true, maxlength: 500, default: "" },
     fecha: { type: Date, default: Date.now },
     respuesta: { type: String, trim: true, required: true },
     analisis: { type: String, trim: true, required: true },
@@ -22,6 +23,7 @@ lecturaIASchema.index(
         prompt_actualizado_en: 1,
         matriz_id: 1,
         matriz_actualizada_en: 1,
+        consulta: 1,
     },
     {
         unique: true,
