@@ -11,6 +11,8 @@
 ## Desarrollo
 
 Requiere Node.js 22 o superior. Configura las variables locales en `.env`; no publiques ese archivo.
+La conexión de MongoDB usa la base `NUMEROLOGIA`; puedes cambiar el nombre con `MONGO_DB_NAME`. Al conectar, la aplicación crea las colecciones de usuarios, matrices numerológicas, prompts, lecturas de IA y bitácora de transacciones si todavía no existen. `MONGO_URI` debe contener las credenciales válidas de tu servidor MongoDB.
+El servidor escucha en `0.0.0.0` por defecto; puedes cambiar la dirección con `HOST` y el puerto con `PORT`.
 
 ```sh
 npm install

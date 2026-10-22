@@ -8,6 +8,7 @@ const usuarioSchema = new mongoose.Schema({
     telefono: { type: String, trim: true },
     password: { type: String, required: true, select: false },
 }, {
+    collection: "USUARIOS",
     timestamps: true,
 });
 

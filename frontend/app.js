@@ -217,7 +217,7 @@ function printReading(index) {
     printWindow.opener = null;
     const date = item.fecha || item.createdAt;
     printWindow.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Lectura numerológica</title>
-        <style>body{margin:0;padding:36px;color:#111;font:16px Georgia,serif}h1{margin:0 0 8px;font-size:28px}h2{margin:24px 0 7px;font-size:16px}p{margin:0;line-height:1.6;white-space:pre-wrap}.date{color:#555;font:12px Arial,sans-serif}</style></head>
+        <link rel="stylesheet" href="print.css"></head>
         <body><main><h1>Lectura numerológica</h1>
         <p class="date">${escapeHtml(date ? new Date(date).toLocaleString("es-ES") : "Fecha no disponible")}</p>
         <h2>Respuesta</h2><p>${escapeHtml(item.respuesta || "Sin respuesta")}</p>

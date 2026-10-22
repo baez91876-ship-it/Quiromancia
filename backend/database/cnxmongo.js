@@ -17,6 +17,7 @@ const connectMongo = async (uri) => {
     console.log('Node DNS servers usados para MongoDB:', dns.getServers());
 
     return mongoose.connect(uri, {
+        dbName: process.env.MONGO_DB_NAME || "NUMEROLOGIA",
         serverSelectionTimeoutMS: 10000,
         connectTimeoutMS: 10000,
         family: 4,
@@ -31,7 +32,6 @@ export const cnxmongo = async () => {
 
     const maxRetries = 3;
     let attempt = 0;
-    let lastError;
 
     while (attempt < maxRetries) {
         try {
@@ -39,9 +39,14 @@ export const cnxmongo = async () => {
             console.log('Conectado a MongoDB');
             return true;
         } catch (error) {
-            lastError = error;
             attempt += 1;
-            console.warn(`Intento ${attempt}/${maxRetries} fallido para MongoDB:`, error.message);
+            const message = error instanceof Error ? error.message : String(error);
+            const authenticationFailed = error?.code === 18 || /bad auth|authentication failed/i.test(message);
+            console.warn(`Intento ${attempt}/${maxRetries} fallido para MongoDB:`, message);
+            if (authenticationFailed) {
+                console.error('Atlas rechazó la autenticación. Verifica el usuario y la contraseña del Database User, authSource=admin y que los caracteres especiales de MONGO_URI estén codificados.');
+                break;
+            }
             if (attempt < maxRetries) {
                 console.log('Reintentando conexión a MongoDB en 5 segundos...');
                 await delay(5000);

@@ -1,9 +1,9 @@
 import express from 'express';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import 'dotenv/config';
 import { cnxmongo, estadoMongo } from './database/cnxmongo.js';
+import { asegurarColecciones } from './database/asegurarColecciones.js';
 import { geminiConfigured } from './config/gemini.js';
 import { asegurarPromptPredeterminado } from './database/seedPrompts.js';
 import apiRouter from './routes/index.js';
@@ -70,13 +70,13 @@ export const createApp = () => {
 
 export const start = (app = createApp()) => {
   const port = Number(process.env.PORT) || 3000;
-  const host = '0.0.0.0';
+  const host = process.env.HOST || '0.0.0.0';
   const localUrl = `http://localhost:${port}`;
   if (!geminiConfigured) {
     console.warn('GEMINI_API_KEY no está configurada; las solicitudes de generación responderán 503.');
   }
   const server = app.listen(port, host, () => {
-    console.log(`Servidor iniciado en ${localUrl}`);
+    console.log(`Servidor escuchando en ${host}:${port} (local: ${localUrl})`);
     void cnxmongo()
       .then(async (connected) => {
         if (!connected) {
@@ -86,9 +86,10 @@ export const start = (app = createApp()) => {
 
         console.log('Conexión a MongoDB establecida exitosamente.');
         try {
+          await asegurarColecciones();
           await asegurarPromptPredeterminado();
         } catch (error) {
-          console.error('No se pudo preparar el prompt predeterminado:', error.message);
+          console.error('No se pudo preparar la base de datos:', error.message);
         }
       })
       .catch((error) => {
